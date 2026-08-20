@@ -31,22 +31,48 @@
             {x:360, y:1360}
         ];
 
-        // Clean placement spots (only beside the path)
+        // ===== CLEAN & ORDERED PLACEMENT SPOTS =====
         const PLACE_SPOTS = [
-            // left of top vertical
-            {x:280, y:160}, {x:280, y:240}, {x:280, y:320},
-            // left of first horizontal
-            {x:60, y:320}, {x:60, y:400}, {x:60, y:480},
-            {x:220, y:400}, {x:220, y:480},
-            // right of second horizontal
-            {x:480, y:440}, {x:480, y:520}, {x:480, y:600},
-            {x:640, y:440}, {x:640, y:520}, {x:640, y:600},
-            // left of third vertical section
-            {x:100, y:720}, {x:100, y:800}, {x:100, y:880},
-            {x:280, y:720}, {x:280, y:800}, {x:280, y:880},
-            // bottom area
-            {x:280, y:960}, {x:280, y:1120},
-            {x:440, y:960}, {x:440, y:1120}
+            // Left of top vertical path
+            {x:280, y:140},
+            {x:280, y:220},
+            {x:280, y:300},
+
+            // Left side of first horizontal
+            {x:60,  y:320},
+            {x:60,  y:400},
+            {x:60,  y:480},
+
+            // Right side of first horizontal
+            {x:220, y:320},
+            {x:220, y:400},
+            {x:220, y:480},
+
+            // Left of second horizontal
+            {x:480, y:440},
+            {x:480, y:520},
+            {x:480, y:600},
+
+            // Right of second horizontal
+            {x:640, y:440},
+            {x:640, y:520},
+            {x:640, y:600},
+
+            // Left of third vertical section
+            {x:100, y:720},
+            {x:100, y:800},
+            {x:100, y:880},
+
+            // Right of third vertical section
+            {x:300, y:720},
+            {x:300, y:800},
+            {x:300, y:880},
+
+            // Bottom area
+            {x:280, y:960},
+            {x:280, y:1120},
+            {x:440, y:960},
+            {x:440, y:1120}
         ];
 
         const TOWERS = {
@@ -113,7 +139,6 @@
                     if (audioCtx.state === "suspended") audioCtx.resume();
                 });
 
-                // Background
                 this.add.rectangle(W/2, H/2, W, H, 0x050510);
 
                 // Subtle grid
@@ -123,7 +148,7 @@
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // PATH (white thick)
+                // PATH
                 const pathG = this.add.graphics();
                 pathG.lineStyle(46, 0xffffff, 0.1);
                 pathG.beginPath();
@@ -143,11 +168,11 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // CLEAN placement squares
+                // ===== CLEAN PLACEMENT SQUARES =====
                 const spotG = this.add.graphics();
                 PLACE_SPOTS.forEach(s => {
                     spotG.lineStyle(3, 0xffffff, 0.9);
-                    spotG.strokeRect(s.x - 30, s.y - 30, 60, 60);
+                    spotG.strokeRect(s.x - 28, s.y - 28, 56, 56);
                 });
 
                 // Top bar
@@ -184,7 +209,7 @@
                     if (key === "archer") box.setStrokeStyle(4, 0x00e5ff, 1);
                 });
 
-                // Speed & Pause (inside map)
+                // Speed & Pause
                 this.speedBtn = this.add.text(620, 200, "1X", {
                     fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
                     padding: { x: 14, y: 8 }
@@ -197,7 +222,7 @@
                 }).setInteractive({ useHandCursor: true });
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
 
-                // START button (only at beginning)
+                // START button
                 this.startBtn = this.add.text(W/2, H/2 + 80, "▶  START GAME", {
                     fontSize: "28px",
                     color: "#ffffff",
@@ -222,7 +247,6 @@
                 this.upBtn.on("pointerdown", () => this.upgradeSelected());
                 this.upPanel.add([upBg, this.upText, this.upBtn]);
 
-                // Input
                 this.input.on("pointerdown", (p) => {
                     if (this.paused || !this.gameStarted) return;
                     if (p.y > 150 && p.y < H - 140) {
@@ -247,7 +271,6 @@
                     fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
                 }).setOrigin(0.5).setAlpha(0.4);
 
-                // Particles
                 const g = this.make.graphics({ x: 0, y: 0, add: false });
                 g.fillStyle(0xffffff); g.fillCircle(4, 4, 4);
                 g.generateTexture("flare", 8, 8); g.destroy();
@@ -302,7 +325,7 @@
                 let valid = false;
                 let snapX = x, snapY = y;
                 for (const s of PLACE_SPOTS) {
-                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 38) {
+                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 36) {
                         valid = true;
                         snapX = s.x; snapY = s.y;
                         break;
@@ -356,7 +379,7 @@
                     fontStyle: "bold",
                     stroke: "#003322",
                     strokeThickness: 6
-                }).setOrigin(0.5).setAlpha(1);
+                }).setOrigin(0.5);
 
                 this.tweens.add({
                     targets: this.nextWaveText,
@@ -404,7 +427,6 @@
                 if (this.paused || !this.gameStarted) return;
                 delta *= this.speed;
 
-                // Auto next wave after finish
                 if (!this.waveActive && this.enemies.length === 0 && this.wave > 0) {
                     this.showNextWaveText();
                     this.time.delayedCall(1400, () => {
@@ -421,7 +443,6 @@
                     }
                 }
 
-                // Enemies
                 for (let i = this.enemies.length - 1; i >= 0; i--) {
                     const e = this.enemies[i];
                     if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
@@ -458,7 +479,6 @@
                     }
                 }
 
-                // Towers
                 for (const tw of this.towers) {
                     if (time - tw.last < tw.data.rate / this.speed) continue;
                     let target = null, best = tw.data.range;
@@ -473,7 +493,6 @@
                     }
                 }
 
-                // Bullets
                 for (let i = this.bullets.length - 1; i >= 0; i--) {
                     const b = this.bullets[i];
                     if (!b.target || !b.target.body.active) {
