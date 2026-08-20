@@ -31,48 +31,38 @@
             {x:360, y:1360}
         ];
 
-        // ===== CLEAN & ORDERED PLACEMENT SPOTS =====
+        // ===== PLACEMENT SPOTS - neatly surrounding the path =====
         const PLACE_SPOTS = [
-            // Left of top vertical path
-            {x:280, y:140},
-            {x:280, y:220},
-            {x:280, y:300},
+            // === Top vertical (x=360) - left & right ===
+            {x:280, y:120}, {x:280, y:200}, {x:280, y:280},
+            {x:440, y:120}, {x:440, y:200}, {x:440, y:280},
 
-            // Left side of first horizontal
-            {x:60,  y:320},
-            {x:60,  y:400},
-            {x:60,  y:480},
+            // === First horizontal (y=240) - above & below ===
+            {x:200, y:160}, {x:280, y:160},
+            {x:200, y:320}, {x:280, y:320},
 
-            // Right side of first horizontal
-            {x:220, y:320},
-            {x:220, y:400},
-            {x:220, y:480},
+            // === Second vertical (x=140) - left & right ===
+            {x:60,  y:320}, {x:60,  y:400}, {x:60,  y:480},
+            {x:220, y:320}, {x:220, y:400}, {x:220, y:480},
 
-            // Left of second horizontal
-            {x:480, y:440},
-            {x:480, y:520},
-            {x:480, y:600},
+            // === Second horizontal (y=520) - above & below ===
+            {x:220, y:440}, {x:300, y:440}, {x:380, y:440}, {x:460, y:440},
+            {x:220, y:600}, {x:300, y:600}, {x:380, y:600}, {x:460, y:600},
 
-            // Right of second horizontal
-            {x:640, y:440},
-            {x:640, y:520},
-            {x:640, y:600},
+            // === Third vertical (x=560) - left & right ===
+            {x:480, y:600}, {x:480, y:680}, {x:480, y:760},
+            {x:640, y:600}, {x:640, y:680}, {x:640, y:760},
 
-            // Left of third vertical section
-            {x:100, y:720},
-            {x:100, y:800},
-            {x:100, y:880},
+            // === Third horizontal (y=800) - above & below ===
+            {x:280, y:720}, {x:360, y:720}, {x:440, y:720},
+            {x:280, y:880}, {x:360, y:880}, {x:440, y:880},
 
-            // Right of third vertical section
-            {x:300, y:720},
-            {x:300, y:800},
-            {x:300, y:880},
+            // === Fourth vertical (x=200) - left & right ===
+            {x:120, y:880}, {x:120, y:960},
+            {x:280, y:880}, {x:280, y:960},
 
-            // Bottom area
-            {x:280, y:960},
-            {x:280, y:1120},
-            {x:440, y:960},
-            {x:440, y:1120}
+            // === Bottom area ===
+            {x:280, y:1120}, {x:360, y:1120}, {x:440, y:1120}
         ];
 
         const TOWERS = {
@@ -148,7 +138,7 @@
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // PATH
+                // PATH (white thick)
                 const pathG = this.add.graphics();
                 pathG.lineStyle(46, 0xffffff, 0.1);
                 pathG.beginPath();
@@ -168,7 +158,7 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // ===== CLEAN PLACEMENT SQUARES =====
+                // ===== CLEAN PLACEMENT SQUARES around the path =====
                 const spotG = this.add.graphics();
                 PLACE_SPOTS.forEach(s => {
                     spotG.lineStyle(3, 0xffffff, 0.9);
