@@ -7,17 +7,15 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
+        html, body {
             background: #050510;
+            width: 100%;
+            height: 100%;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
         }
         #game-container {
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -26,82 +24,41 @@
 
     <script>
         // ============================================
-        // WOBBLE WALLS
+        // WOBBLE WALLS - Improved Visual MVP
         // Cyber-Fantasy Neon Tower Defense
-        // Advanced MVP - Phaser 3
         // ============================================
 
-        const GAME_WIDTH = 960;
-        const GAME_HEIGHT = 640;
+        const W = 960;
+        const H = 640;
 
-        // Path points (enemy movement)
+        // Cleaner path
         const PATH = [
-            { x: -40, y: 320 },
-            { x: 220, y: 320 },
-            { x: 220, y: 140 },
-            { x: 480, y: 140 },
-            { x: 480, y: 480 },
-            { x: 720, y: 480 },
-            { x: 720, y: 280 },
-            { x: 1000, y: 280 }
+            {x: -50, y: 300},
+            {x: 180, y: 300},
+            {x: 180, y: 160},
+            {x: 420, y: 160},
+            {x: 420, y: 460},
+            {x: 680, y: 460},
+            {x: 680, y: 260},
+            {x: 1010, y: 260}
         ];
 
-        // Tower definitions
-        const TOWER_TYPES = {
-            archer: {
-                name: "Neon Archer",
-                cost: 50,
-                range: 160,
-                damage: 12,
-                fireRate: 600,
-                color: 0x00f0ff,
-                bulletSpeed: 420
-            },
-            mage: {
-                name: "Arcane Mage",
-                cost: 80,
-                range: 130,
-                damage: 8,
-                fireRate: 900,
-                color: 0xff00aa,
-                bulletSpeed: 280,
-                aoe: true
-            },
-            tesla: {
-                name: "Tesla Coil",
-                cost: 120,
-                range: 150,
-                damage: 18,
-                fireRate: 1100,
-                color: 0xffee00,
-                bulletSpeed: 500,
-                chain: true
-            }
+        const TOWERS = {
+            archer: { name: "Neon Archer", cost: 50, range: 155, dmg: 14, rate: 550, color: 0x00e5ff, bullet: 450 },
+            mage:   { name: "Arcane Mage", cost: 85, range: 135, dmg: 9,  rate: 850, color: 0xff2d95, bullet: 300 },
+            tesla:  { name: "Tesla Coil",  cost: 130, range: 145, dmg: 22, rate: 1000, color: 0xffee00, bullet: 520 }
         };
 
-        // Enemy definitions
-        const ENEMY_TYPES = {
-            goblin: { hp: 40, speed: 70, reward: 8, color: 0x44ff44, size: 10 },
-            runner: { hp: 25, speed: 130, reward: 6, color: 0x00ffcc, size: 8 },
-            orc: { hp: 120, speed: 45, reward: 16, color: 0xff4444, size: 18 },
-            bat: { hp: 35, speed: 100, reward: 9, color: 0xaa66ff, size: 12 },
-            drone: { hp: 80, speed: 60, reward: 14, color: 0xffaa00, size: 15 }
+        const ENEMIES = {
+            goblin: { hp: 45, speed: 75,  reward: 9,  color: 0x39ff14, size: 11 },
+            runner: { hp: 28, speed: 135, reward: 7,  color: 0x00ffcc, size: 9  },
+            orc:    { hp: 130, speed: 48, reward: 18, color: 0xff3355, size: 15 },
+            bat:    { hp: 38, speed: 105, reward: 11, color: 0xb14eff, size: 10 },
+            drone:  { hp: 90, speed: 62,  reward: 15, color: 0xffaa00, size: 13 }
         };
-
-        class BootScene extends Phaser.Scene {
-            constructor() {
-                super("BootScene");
-            }
-
-            create() {
-                this.scene.start("GameScene");
-            }
-        }
 
         class GameScene extends Phaser.Scene {
-            constructor() {
-                super("GameScene");
-            }
+            constructor() { super("Game"); }
 
             init() {
                 this.gold = 200;
@@ -110,192 +67,175 @@
                 this.enemies = [];
                 this.towers = [];
                 this.bullets = [];
-                this.selectedTowerType = "archer";
-                this.isWaveActive = false;
+                this.selected = "archer";
+                this.waveActive = false;
+                this.spawnLeft = 0;
                 this.spawnTimer = 0;
-                this.enemiesToSpawn = 0;
-                this.pathGraphics = null;
             }
 
             create() {
-                // Background
-                this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0a1a);
+                // Dark background with subtle grid
+                this.add.rectangle(W/2, H/2, W, H, 0x07071a);
 
-                // Draw path
-                this.pathGraphics = this.add.graphics();
-                this.pathGraphics.lineStyle(28, 0x1a1a3a, 1);
-                this.pathGraphics.beginPath();
-                this.pathGraphics.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) {
-                    this.pathGraphics.lineTo(PATH[i].x, PATH[i].y);
-                }
-                this.pathGraphics.strokePath();
+                // Path (glow style)
+                const g = this.add.graphics();
+                // Outer glow
+                g.lineStyle(36, 0x00e5ff, 0.07);
+                g.beginPath();
+                g.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
+                g.strokePath();
 
-                this.pathGraphics.lineStyle(4, 0x00f0ff, 0.35);
-                this.pathGraphics.beginPath();
-                this.pathGraphics.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) {
-                    this.pathGraphics.lineTo(PATH[i].x, PATH[i].y);
-                }
-                this.pathGraphics.strokePath();
+                // Main path
+                g.lineStyle(22, 0x12122e, 1);
+                g.beginPath();
+                g.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
+                g.strokePath();
 
-                // UI Panel
-                this.add.rectangle(GAME_WIDTH / 2, 30, GAME_WIDTH, 60, 0x111122, 0.9);
+                // Neon edge
+                g.lineStyle(3, 0x00e5ff, 0.55);
+                g.beginPath();
+                g.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
+                g.strokePath();
 
-                this.goldText = this.add.text(20, 18, "Gold: 200", {
+                // Top UI bar
+                this.add.rectangle(W/2, 28, W, 56, 0x0d0d1f, 0.95);
+                this.add.rectangle(W/2, 56, W, 2, 0x00e5ff, 0.25);
+
+                this.goldText = this.add.text(24, 16, "GOLD  200", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
+                this.livesText = this.add.text(170, 16, "LIVES  20", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
+                this.waveText = this.add.text(320, 16, "WAVE  0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
+
+                // Tower select buttons
+                this.makeBtn(620, 28, "archer", "ARCHER\n50");
+                this.makeBtn(730, 28, "mage", "MAGE\n85");
+                this.makeBtn(840, 28, "tesla", "TESLA\n130");
+
+                // Start button
+                this.startBtn = this.add.text(W/2, H - 32, "▶  START WAVE", {
                     fontSize: "20px",
-                    color: "#ffd700"
-                });
-
-                this.livesText = this.add.text(180, 18, "Lives: 20", {
-                    fontSize: "20px",
-                    color: "#ff5555"
-                });
-
-                this.waveText = this.add.text(340, 18, "Wave: 0", {
-                    fontSize: "20px",
-                    color: "#00f0ff"
-                });
-
-                // Tower buttons
-                this.createTowerButton(620, 30, "archer", "Archer\n50G");
-                this.createTowerButton(730, 30, "mage", "Mage\n80G");
-                this.createTowerButton(840, 30, "tesla", "Tesla\n120G");
-
-                // Start wave button
-                this.startBtn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, "[ START WAVE ]", {
-                    fontSize: "22px",
-                    color: "#00ff88",
-                    backgroundColor: "#003322",
-                    padding: { x: 16, y: 8 }
+                    color: "#00ff9d",
+                    backgroundColor: "#003d2e",
+                    padding: { x: 20, y: 10 }
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                 this.startBtn.on("pointerdown", () => this.startWave());
+                this.startBtn.on("pointerover", () => this.startBtn.setStyle({ backgroundColor: "#005c42" }));
+                this.startBtn.on("pointerout", () => this.startBtn.setStyle({ backgroundColor: "#003d2e" }));
 
                 // Placement
-                this.input.on("pointerdown", (pointer) => {
-                    if (pointer.y > 70 && pointer.y < GAME_HEIGHT - 60) {
-                        this.placeTower(pointer.x, pointer.y);
-                    }
+                this.input.on("pointerdown", (p) => {
+                    if (p.y > 70 && p.y < H - 70) this.tryPlace(p.x, p.y);
                 });
 
-                // Title
-                this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, "WOBBLE WALLS", {
-                    fontSize: "42px",
-                    color: "#00f0ff",
-                    stroke: "#ff00aa",
-                    strokeThickness: 3
-                }).setOrigin(0.5).setAlpha(0.15);
+                // Watermark
+                this.add.text(W/2, H/2, "WOBBLE WALLS", {
+                    fontSize: "52px",
+                    color: "#00e5ff",
+                    fontStyle: "bold"
+                }).setOrigin(0.5).setAlpha(0.06);
             }
 
-            createTowerButton(x, y, type, label) {
+            makeBtn(x, y, key, label) {
                 const btn = this.add.text(x, y, label, {
                     fontSize: "13px",
-                    color: "#ffffff",
-                    backgroundColor: "#222244",
-                    padding: { x: 10, y: 6 },
+                    color: "#e0e0ff",
+                    backgroundColor: "#1a1a35",
+                    padding: { x: 12, y: 7 },
                     align: "center"
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                 btn.on("pointerdown", () => {
-                    this.selectedTowerType = type;
-                    this.children.list.forEach(child => {
-                        if (child.type === "Text" && child.text.includes("G")) {
-                            child.setBackgroundColor("#222244");
-                        }
+                    this.selected = key;
+                    this.children.list.forEach(c => {
+                        if (c.type === "Text" && c.text.includes("\n")) c.setBackgroundColor("#1a1a35");
                     });
-                    btn.setBackgroundColor("#004466");
+                    btn.setBackgroundColor("#003d55");
                 });
 
-                if (type === "archer") btn.setBackgroundColor("#004466");
+                if (key === "archer") btn.setBackgroundColor("#003d55");
             }
 
-            placeTower(x, y) {
-                const type = TOWER_TYPES[this.selectedTowerType];
-                if (this.gold < type.cost) return;
+            tryPlace(x, y) {
+                const t = TOWERS[this.selected];
+                if (this.gold < t.cost) return;
 
-                // Simple placement check (not on path)
+                // Keep away from path
                 for (let i = 0; i < PATH.length - 1; i++) {
-                    const dist = this.distanceToSegment(x, y, PATH[i], PATH[i + 1]);
-                    if (dist < 40) return;
+                    if (this.distToLine(x, y, PATH[i], PATH[i+1]) < 38) return;
+                }
+                // Keep away from other towers
+                for (const tw of this.towers) {
+                    if (Phaser.Math.Distance.Between(x, y, tw.x, tw.y) < 48) return;
                 }
 
-                // Check overlapping towers
-                for (const t of this.towers) {
-                    if (Phaser.Math.Distance.Between(x, y, t.x, t.y) < 50) return;
-                }
+                this.gold -= t.cost;
+                this.goldText.setText("GOLD  " + this.gold);
 
-                this.gold -= type.cost;
-                this.goldText.setText("Gold: " + this.gold);
+                // Visual tower
+                const base = this.add.circle(x, y, 18, 0x111122);
+                const core = this.add.circle(x, y, 12, t.color);
+                const glow = this.add.circle(x, y, 22, t.color, 0.18);
+                const range = this.add.circle(x, y, t.range, t.color, 0.06);
 
-                const tower = {
-                    x: x,
-                    y: y,
-                    type: this.selectedTowerType,
-                    data: type,
-                    lastShot: 0,
-                    graphics: this.add.circle(x, y, 16, type.color),
-                    rangeCircle: this.add.circle(x, y, type.range, type.color, 0.08)
-                };
-
-                this.towers.push(tower);
+                this.towers.push({
+                    x, y,
+                    data: t,
+                    last: 0,
+                    core, glow, range
+                });
             }
 
-            distanceToSegment(px, py, a, b) {
-                const dx = b.x - a.x;
-                const dy = b.y - a.y;
-                const lengthSq = dx * dx + dy * dy;
-                let t = ((px - a.x) * dx + (py - a.y) * dy) / lengthSq;
-                t = Math.max(0, Math.min(1, t));
-                const projX = a.x + t * dx;
-                const projY = a.y + t * dy;
-                return Phaser.Math.Distance.Between(px, py, projX, projY);
+            distToLine(px, py, a, b) {
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const len = dx*dx + dy*dy;
+                let t = ((px-a.x)*dx + (py-a.y)*dy) / len;
+                t = Phaser.Math.Clamp(t, 0, 1);
+                return Phaser.Math.Distance.Between(px, py, a.x + t*dx, a.y + t*dy);
             }
 
             startWave() {
-                if (this.isWaveActive) return;
-
+                if (this.waveActive) return;
                 this.wave++;
-                this.waveText.setText("Wave: " + this.wave);
-                this.isWaveActive = true;
-
-                // Scaling difficulty
-                this.enemiesToSpawn = 6 + this.wave * 2;
+                this.waveText.setText("WAVE  " + this.wave);
+                this.waveActive = true;
+                this.spawnLeft = 5 + this.wave * 2;
                 this.spawnTimer = 0;
             }
 
-            spawnEnemy() {
-                const types = Object.keys(ENEMY_TYPES);
-                let typeKey = types[0];
+            spawn() {
+                const keys = Object.keys(ENEMIES);
+                let key = keys[0];
+                if (this.wave >= 3) key = keys[Phaser.Math.Between(0, 1)];
+                if (this.wave >= 5) key = keys[Phaser.Math.Between(0, 2)];
+                if (this.wave >= 7) key = keys[Phaser.Math.Between(0, 4)];
 
-                if (this.wave >= 3) typeKey = types[Phaser.Math.Between(0, 1)];
-                if (this.wave >= 5) typeKey = types[Phaser.Math.Between(0, 2)];
-                if (this.wave >= 8) typeKey = types[Phaser.Math.Between(0, 4)];
+                const d = ENEMIES[key];
+                const mult = 1 + (this.wave - 1) * 0.22;
 
-                const data = ENEMY_TYPES[typeKey];
-                const hpMultiplier = 1 + (this.wave - 1) * 0.25;
+                const body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
+                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 4, d.color, 0.25);
 
-                const enemy = {
-                    x: PATH[0].x,
-                    y: PATH[0].y,
-                    hp: data.hp * hpMultiplier,
-                    maxHp: data.hp * hpMultiplier,
-                    speed: data.speed,
-                    reward: data.reward,
-                    pathIndex: 0,
-                    graphics: this.add.circle(PATH[0].x, PATH[0].y, data.size, data.color)
-                };
-
-                this.enemies.push(enemy);
+                this.enemies.push({
+                    x: PATH[0].x, y: PATH[0].y,
+                    hp: d.hp * mult,
+                    max: d.hp * mult,
+                    speed: d.speed,
+                    reward: d.reward,
+                    idx: 0,
+                    body, ring
+                });
             }
 
             update(time, delta) {
-                // Spawn logic
-                if (this.isWaveActive && this.enemiesToSpawn > 0) {
+                // Spawn
+                if (this.waveActive && this.spawnLeft > 0) {
                     this.spawnTimer += delta;
-                    if (this.spawnTimer > 700) {
-                        this.spawnEnemy();
-                        this.enemiesToSpawn--;
+                    if (this.spawnTimer > 650) {
+                        this.spawn();
+                        this.spawnLeft--;
                         this.spawnTimer = 0;
                     }
                 }
@@ -303,128 +243,115 @@
                 // Move enemies
                 for (let i = this.enemies.length - 1; i >= 0; i--) {
                     const e = this.enemies[i];
-                    const target = PATH[e.pathIndex + 1];
-
-                    if (!target) {
-                        // Reached end
+                    const next = PATH[e.idx + 1];
+                    if (!next) {
                         this.lives--;
-                        this.livesText.setText("Lives: " + this.lives);
-                        e.graphics.destroy();
+                        this.livesText.setText("LIVES  " + this.lives);
+                        e.body.destroy(); e.ring.destroy();
                         this.enemies.splice(i, 1);
-
-                        if (this.lives <= 0) {
-                            this.gameOver();
-                        }
+                        if (this.lives <= 0) this.gameOver();
                         continue;
                     }
 
-                    const dist = Phaser.Math.Distance.Between(e.x, e.y, target.x, target.y);
-                    if (dist < 4) {
-                        e.pathIndex++;
+                    const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
+                    if (dist < 5) {
+                        e.idx++;
                     } else {
-                        const angle = Phaser.Math.Angle.Between(e.x, e.y, target.x, target.y);
-                        e.x += Math.cos(angle) * e.speed * (delta / 1000);
-                        e.y += Math.sin(angle) * e.speed * (delta / 1000);
-                        e.graphics.setPosition(e.x, e.y);
+                        const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
+                        e.x += Math.cos(ang) * e.speed * delta / 1000;
+                        e.y += Math.sin(ang) * e.speed * delta / 1000;
+                        e.body.setPosition(e.x, e.y);
+                        e.ring.setPosition(e.x, e.y);
                     }
                 }
 
-                // Towers shooting
-                for (const tower of this.towers) {
-                    if (time - tower.lastShot < tower.data.fireRate) continue;
-
-                    let target = null;
-                    let closest = tower.data.range;
-
+                // Towers attack
+                for (const tw of this.towers) {
+                    if (time - tw.last < tw.data.rate) continue;
+                    let target = null, best = tw.data.range;
                     for (const e of this.enemies) {
-                        const d = Phaser.Math.Distance.Between(tower.x, tower.y, e.x, e.y);
-                        if (d < closest) {
-                            closest = d;
-                            target = e;
-                        }
+                        const d = Phaser.Math.Distance.Between(tw.x, tw.y, e.x, e.y);
+                        if (d < best) { best = d; target = e; }
                     }
-
                     if (target) {
-                        this.shoot(tower, target);
-                        tower.lastShot = time;
+                        this.fire(tw, target);
+                        tw.last = time;
                     }
                 }
 
-                // Move bullets
+                // Bullets
                 for (let i = this.bullets.length - 1; i >= 0; i--) {
                     const b = this.bullets[i];
-                    if (!b.target || !b.target.graphics.active) {
-                        b.graphics.destroy();
+                    if (!b.target || !b.target.body.active) {
+                        b.gfx.destroy();
                         this.bullets.splice(i, 1);
                         continue;
                     }
+                    const ang = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
+                    b.x += Math.cos(ang) * b.spd * delta / 1000;
+                    b.y += Math.sin(ang) * b.spd * delta / 1000;
+                    b.gfx.setPosition(b.x, b.y);
 
-                    const angle = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
-                    b.x += Math.cos(angle) * b.speed * (delta / 1000);
-                    b.y += Math.sin(angle) * b.speed * (delta / 1000);
-                    b.graphics.setPosition(b.x, b.y);
-
-                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 12) {
-                        b.target.hp -= b.damage;
-                        b.graphics.destroy();
+                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 14) {
+                        b.target.hp -= b.dmg;
+                        b.gfx.destroy();
                         this.bullets.splice(i, 1);
 
                         if (b.target.hp <= 0) {
                             this.gold += b.target.reward;
-                            this.goldText.setText("Gold: " + this.gold);
-                            b.target.graphics.destroy();
+                            this.goldText.setText("GOLD  " + this.gold);
+                            b.target.body.destroy();
+                            b.target.ring.destroy();
                             const idx = this.enemies.indexOf(b.target);
                             if (idx > -1) this.enemies.splice(idx, 1);
                         }
                     }
                 }
 
-                // Check wave complete
-                if (this.isWaveActive && this.enemiesToSpawn <= 0 && this.enemies.length === 0) {
-                    this.isWaveActive = false;
-                    this.gold += 25 + this.wave * 5;
-                    this.goldText.setText("Gold: " + this.gold);
+                // Wave finished
+                if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
+                    this.waveActive = false;
+                    this.gold += 20 + this.wave * 8;
+                    this.goldText.setText("GOLD  " + this.gold);
                 }
             }
 
-            shoot(tower, target) {
-                const bullet = {
-                    x: tower.x,
-                    y: tower.y,
-                    target: target,
-                    damage: tower.data.damage,
-                    speed: tower.data.bulletSpeed,
-                    graphics: this.add.circle(tower.x, tower.y, 5, 0xffffff)
-                };
-                this.bullets.push(bullet);
+            fire(tw, target) {
+                const gfx = this.add.circle(tw.x, tw.y, 4, 0xffffff);
+                this.bullets.push({
+                    x: tw.x, y: tw.y,
+                    target,
+                    dmg: tw.data.dmg,
+                    spd: tw.data.bullet,
+                    gfx
+                });
             }
 
             gameOver() {
-                this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.75);
-                this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, "GAME OVER", {
-                    fontSize: "64px",
-                    color: "#ff0044"
+                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.72);
+                this.add.text(W/2, H/2 - 20, "GAME OVER", {
+                    fontSize: "64px", color: "#ff2d55", fontStyle: "bold"
                 }).setOrigin(0.5);
-
+                this.add.text(W/2, H/2 + 40, "Refresh to restart", {
+                    fontSize: "18px", color: "#aaaaaa"
+                }).setOrigin(0.5);
                 this.input.off("pointerdown");
                 this.startBtn.disableInteractive();
             }
         }
 
-        const config = {
+        new Phaser.Game({
             type: Phaser.AUTO,
-            width: GAME_WIDTH,
-            height: GAME_HEIGHT,
+            width: W,
+            height: H,
             parent: "game-container",
-            backgroundColor: "#0a0a1a",
+            backgroundColor: "#07071a",
             scale: {
                 mode: Phaser.Scale.FIT,
                 autoCenter: Phaser.Scale.CENTER_BOTH
             },
-            scene: [BootScene, GameScene]
-        };
-
-        new Phaser.Game(config);
+            scene: [GameScene]
+        });
     </script>
 </body>
 </html>
