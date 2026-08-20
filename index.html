@@ -24,38 +24,60 @@
 
     <script>
         // ============================================
-        // WOBBLE WALLS - Improved Visual MVP
-        // Cyber-Fantasy Neon Tower Defense
+        // WOBBLE WALLS - Taller + Sound + Top Spawn
         // ============================================
 
-        const W = 960;
-        const H = 640;
+        const W = 720;
+        const H = 1100;          // much taller for phone
 
-        // Cleaner path
+        // Path starts from TOP
         const PATH = [
-            {x: -50, y: 300},
-            {x: 180, y: 300},
-            {x: 180, y: 160},
-            {x: 420, y: 160},
-            {x: 420, y: 460},
-            {x: 680, y: 460},
-            {x: 680, y: 260},
-            {x: 1010, y: 260}
+            {x: 360, y: -40},
+            {x: 360, y: 220},
+            {x: 160, y: 220},
+            {x: 160, y: 480},
+            {x: 520, y: 480},
+            {x: 520, y: 720},
+            {x: 280, y: 720},
+            {x: 280, y: 980},
+            {x: 360, y: 1140}
         ];
 
         const TOWERS = {
-            archer: { name: "Neon Archer", cost: 50, range: 155, dmg: 14, rate: 550, color: 0x00e5ff, bullet: 450 },
-            mage:   { name: "Arcane Mage", cost: 85, range: 135, dmg: 9,  rate: 850, color: 0xff2d95, bullet: 300 },
-            tesla:  { name: "Tesla Coil",  cost: 130, range: 145, dmg: 22, rate: 1000, color: 0xffee00, bullet: 520 }
+            archer: { name: "Neon Archer", cost: 50, range: 150, dmg: 15, rate: 520, color: 0x00e5ff, bullet: 480 },
+            mage:   { name: "Arcane Mage", cost: 85, range: 130, dmg: 10, rate: 820, color: 0xff2d95, bullet: 320 },
+            tesla:  { name: "Tesla Coil",  cost: 130, range: 145, dmg: 24, rate: 980, color: 0xffee00, bullet: 550 }
         };
 
         const ENEMIES = {
-            goblin: { hp: 45, speed: 75,  reward: 9,  color: 0x39ff14, size: 11 },
-            runner: { hp: 28, speed: 135, reward: 7,  color: 0x00ffcc, size: 9  },
-            orc:    { hp: 130, speed: 48, reward: 18, color: 0xff3355, size: 15 },
-            bat:    { hp: 38, speed: 105, reward: 11, color: 0xb14eff, size: 10 },
-            drone:  { hp: 90, speed: 62,  reward: 15, color: 0xffaa00, size: 13 }
+            goblin: { hp: 48, speed: 78,  reward: 9,  color: 0x39ff14, size: 12 },
+            runner: { hp: 30, speed: 140, reward: 7,  color: 0x00ffcc, size: 9  },
+            orc:    { hp: 140, speed: 50, reward: 19, color: 0xff3355, size: 16 },
+            bat:    { hp: 40, speed: 110, reward: 12, color: 0xb14eff, size: 11 },
+            drone:  { hp: 95, speed: 65,  reward: 16, color: 0xffaa00, size: 14 }
         };
+
+        // Simple Web Audio sounds
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, duration, type = "square", volume = 0.08) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function sfxShoot()  { playTone(680, 0.07, "square", 0.06); }
+        function sfxHit()    { playTone(180, 0.12, "sawtooth", 0.07); }
+        function sfxDeath()  { playTone(120, 0.18, "triangle", 0.09); }
+        function sfxWave()   { playTone(440, 0.15, "sine", 0.08); playTone(660, 0.2, "sine", 0.06); }
+        function sfxPlace()  { playTone(520, 0.1, "triangle", 0.07); }
 
         class GameScene extends Phaser.Scene {
             constructor() { super("Game"); }
@@ -74,76 +96,74 @@
             }
 
             create() {
-                // Dark background with subtle grid
+                // Resume audio on first tap
+                this.input.once("pointerdown", () => {
+                    if (audioCtx.state === "suspended") audioCtx.resume();
+                });
+
                 this.add.rectangle(W/2, H/2, W, H, 0x07071a);
 
-                // Path (glow style)
+                // Path
                 const g = this.add.graphics();
-                // Outer glow
-                g.lineStyle(36, 0x00e5ff, 0.07);
+                g.lineStyle(34, 0x00e5ff, 0.06);
                 g.beginPath();
                 g.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
                 g.strokePath();
 
-                // Main path
-                g.lineStyle(22, 0x12122e, 1);
+                g.lineStyle(20, 0x101028, 1);
                 g.beginPath();
                 g.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
                 g.strokePath();
 
-                // Neon edge
-                g.lineStyle(3, 0x00e5ff, 0.55);
+                g.lineStyle(3, 0x00e5ff, 0.5);
                 g.beginPath();
                 g.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) g.lineTo(PATH[i].x, PATH[i].y);
                 g.strokePath();
 
-                // Top UI bar
-                this.add.rectangle(W/2, 28, W, 56, 0x0d0d1f, 0.95);
-                this.add.rectangle(W/2, 56, W, 2, 0x00e5ff, 0.25);
+                // Top bar
+                this.add.rectangle(W/2, 32, W, 64, 0x0c0c1c, 0.95);
+                this.add.rectangle(W/2, 64, W, 2, 0x00e5ff, 0.3);
 
-                this.goldText = this.add.text(24, 16, "GOLD  200", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
-                this.livesText = this.add.text(170, 16, "LIVES  20", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
-                this.waveText = this.add.text(320, 16, "WAVE  0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
+                this.goldText  = this.add.text(18, 18, "GOLD  200",  { fontSize: "17px", color: "#ffd700", fontStyle: "bold" });
+                this.livesText = this.add.text(150, 18, "LIVES  20", { fontSize: "17px", color: "#ff4d6d", fontStyle: "bold" });
+                this.waveText  = this.add.text(290, 18, "WAVE  0",   { fontSize: "17px", color: "#00e5ff", fontStyle: "bold" });
 
-                // Tower select buttons
-                this.makeBtn(620, 28, "archer", "ARCHER\n50");
-                this.makeBtn(730, 28, "mage", "MAGE\n85");
-                this.makeBtn(840, 28, "tesla", "TESLA\n130");
+                this.makeBtn(480, 32, "archer", "ARCHER\n50");
+                this.makeBtn(580, 32, "mage",   "MAGE\n85");
+                this.makeBtn(680, 32, "tesla",  "TESLA\n130");
 
                 // Start button
-                this.startBtn = this.add.text(W/2, H - 32, "▶  START WAVE", {
+                this.startBtn = this.add.text(W/2, H - 40, "▶  START WAVE", {
                     fontSize: "20px",
                     color: "#00ff9d",
                     backgroundColor: "#003d2e",
-                    padding: { x: 20, y: 10 }
+                    padding: { x: 22, y: 12 }
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                 this.startBtn.on("pointerdown", () => this.startWave());
                 this.startBtn.on("pointerover", () => this.startBtn.setStyle({ backgroundColor: "#005c42" }));
-                this.startBtn.on("pointerout", () => this.startBtn.setStyle({ backgroundColor: "#003d2e" }));
+                this.startBtn.on("pointerout",  () => this.startBtn.setStyle({ backgroundColor: "#003d2e" }));
 
-                // Placement
                 this.input.on("pointerdown", (p) => {
-                    if (p.y > 70 && p.y < H - 70) this.tryPlace(p.x, p.y);
+                    if (p.y > 80 && p.y < H - 90) this.tryPlace(p.x, p.y);
                 });
 
-                // Watermark
                 this.add.text(W/2, H/2, "WOBBLE WALLS", {
-                    fontSize: "52px",
+                    fontSize: "42px",
                     color: "#00e5ff",
                     fontStyle: "bold"
-                }).setOrigin(0.5).setAlpha(0.06);
+                }).setOrigin(0.5).setAlpha(0.05);
             }
 
             makeBtn(x, y, key, label) {
                 const btn = this.add.text(x, y, label, {
-                    fontSize: "13px",
+                    fontSize: "12px",
                     color: "#e0e0ff",
                     backgroundColor: "#1a1a35",
-                    padding: { x: 12, y: 7 },
+                    padding: { x: 10, y: 6 },
                     align: "center"
                 }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -154,7 +174,6 @@
                     });
                     btn.setBackgroundColor("#003d55");
                 });
-
                 if (key === "archer") btn.setBackgroundColor("#003d55");
             }
 
@@ -162,35 +181,28 @@
                 const t = TOWERS[this.selected];
                 if (this.gold < t.cost) return;
 
-                // Keep away from path
                 for (let i = 0; i < PATH.length - 1; i++) {
-                    if (this.distToLine(x, y, PATH[i], PATH[i+1]) < 38) return;
+                    if (this.distToLine(x, y, PATH[i], PATH[i+1]) < 36) return;
                 }
-                // Keep away from other towers
                 for (const tw of this.towers) {
-                    if (Phaser.Math.Distance.Between(x, y, tw.x, tw.y) < 48) return;
+                    if (Phaser.Math.Distance.Between(x, y, tw.x, tw.y) < 46) return;
                 }
 
                 this.gold -= t.cost;
                 this.goldText.setText("GOLD  " + this.gold);
+                sfxPlace();
 
-                // Visual tower
-                const base = this.add.circle(x, y, 18, 0x111122);
-                const core = this.add.circle(x, y, 12, t.color);
-                const glow = this.add.circle(x, y, 22, t.color, 0.18);
-                const range = this.add.circle(x, y, t.range, t.color, 0.06);
+                const base = this.add.circle(x, y, 17, 0x111122);
+                const core = this.add.circle(x, y, 11, t.color);
+                const glow = this.add.circle(x, y, 20, t.color, 0.2);
+                const range = this.add.circle(x, y, t.range, t.color, 0.05);
 
-                this.towers.push({
-                    x, y,
-                    data: t,
-                    last: 0,
-                    core, glow, range
-                });
+                this.towers.push({ x, y, data: t, last: 0, core, glow, range });
             }
 
             distToLine(px, py, a, b) {
                 const dx = b.x - a.x, dy = b.y - a.y;
-                const len = dx*dx + dy*dy;
+                const len = dx*dx + dy*dy || 1;
                 let t = ((px-a.x)*dx + (py-a.y)*dy) / len;
                 t = Phaser.Math.Clamp(t, 0, 1);
                 return Phaser.Math.Distance.Between(px, py, a.x + t*dx, a.y + t*dy);
@@ -201,8 +213,9 @@
                 this.wave++;
                 this.waveText.setText("WAVE  " + this.wave);
                 this.waveActive = true;
-                this.spawnLeft = 5 + this.wave * 2;
+                this.spawnLeft = 6 + this.wave * 2;
                 this.spawnTimer = 0;
+                sfxWave();
             }
 
             spawn() {
@@ -213,27 +226,23 @@
                 if (this.wave >= 7) key = keys[Phaser.Math.Between(0, 4)];
 
                 const d = ENEMIES[key];
-                const mult = 1 + (this.wave - 1) * 0.22;
+                const mult = 1 + (this.wave - 1) * 0.23;
 
                 const body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
-                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 4, d.color, 0.25);
+                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 4, d.color, 0.28);
 
                 this.enemies.push({
                     x: PATH[0].x, y: PATH[0].y,
-                    hp: d.hp * mult,
-                    max: d.hp * mult,
-                    speed: d.speed,
-                    reward: d.reward,
-                    idx: 0,
-                    body, ring
+                    hp: d.hp * mult, max: d.hp * mult,
+                    speed: d.speed, reward: d.reward,
+                    idx: 0, body, ring
                 });
             }
 
             update(time, delta) {
-                // Spawn
                 if (this.waveActive && this.spawnLeft > 0) {
                     this.spawnTimer += delta;
-                    if (this.spawnTimer > 650) {
+                    if (this.spawnTimer > 620) {
                         this.spawn();
                         this.spawnLeft--;
                         this.spawnTimer = 0;
@@ -265,7 +274,7 @@
                     }
                 }
 
-                // Towers attack
+                // Towers shoot
                 for (const tw of this.towers) {
                     if (time - tw.last < tw.data.rate) continue;
                     let target = null, best = tw.data.range;
@@ -276,6 +285,7 @@
                     if (target) {
                         this.fire(tw, target);
                         tw.last = time;
+                        sfxShoot();
                     }
                 }
 
@@ -292,10 +302,11 @@
                     b.y += Math.sin(ang) * b.spd * delta / 1000;
                     b.gfx.setPosition(b.x, b.y);
 
-                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 14) {
+                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 13) {
                         b.target.hp -= b.dmg;
                         b.gfx.destroy();
                         this.bullets.splice(i, 1);
+                        sfxHit();
 
                         if (b.target.hp <= 0) {
                             this.gold += b.target.reward;
@@ -304,14 +315,14 @@
                             b.target.ring.destroy();
                             const idx = this.enemies.indexOf(b.target);
                             if (idx > -1) this.enemies.splice(idx, 1);
+                            sfxDeath();
                         }
                     }
                 }
 
-                // Wave finished
                 if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
                     this.waveActive = false;
-                    this.gold += 20 + this.wave * 8;
+                    this.gold += 25 + this.wave * 8;
                     this.goldText.setText("GOLD  " + this.gold);
                 }
             }
@@ -320,19 +331,16 @@
                 const gfx = this.add.circle(tw.x, tw.y, 4, 0xffffff);
                 this.bullets.push({
                     x: tw.x, y: tw.y,
-                    target,
-                    dmg: tw.data.dmg,
-                    spd: tw.data.bullet,
-                    gfx
+                    target, dmg: tw.data.dmg, spd: tw.data.bullet, gfx
                 });
             }
 
             gameOver() {
-                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.72);
-                this.add.text(W/2, H/2 - 20, "GAME OVER", {
-                    fontSize: "64px", color: "#ff2d55", fontStyle: "bold"
+                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.75);
+                this.add.text(W/2, H/2 - 30, "GAME OVER", {
+                    fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
                 }).setOrigin(0.5);
-                this.add.text(W/2, H/2 + 40, "Refresh to restart", {
+                this.add.text(W/2, H/2 + 30, "Refresh to restart", {
                     fontSize: "18px", color: "#aaaaaa"
                 }).setOrigin(0.5);
                 this.input.off("pointerdown");
