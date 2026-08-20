@@ -7,12 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            background: #03030a;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
+        html, body { background: #03030a; width: 100%; height: 100%; overflow: hidden; }
         #game-container { width: 100%; height: 100%; }
     </style>
 </head>
@@ -20,495 +15,423 @@
     <div id="game-container"></div>
 
     <script>
-        // =====================================================
-        // WOBBLE WALLS - Neon Cyber Tower Defense
-        // Visual style inspired by modern neon TD games
-        // =====================================================
-
         const W = 720;
         const H = 1280;
 
-        // Path (starts from top)
         const PATH = [
-            {x: 360, y: -60},
-            {x: 360, y: 200},
-            {x: 140, y: 200},
-            {x: 140, y: 460},
-            {x: 560, y: 460},
-            {x: 560, y: 740},
-            {x: 200, y: 740},
-            {x: 200, y: 980},
-            {x: 360, y: 980},
-            {x: 360, y: 1320}
+            {x:360,y:-60},{x:360,y:200},{x:140,y:200},{x:140,y:460},
+            {x:560,y:460},{x:560,y:740},{x:200,y:740},{x:200,y:980},
+            {x:360,y:980},{x:360,y:1320}
         ];
 
         const TOWERS = {
-            archer:  { name: "Archer",  cost: 50,  range: 160, dmg: 15, rate: 480,  color: 0x00f0ff, upCost: 40,  maxLvl: 3 },
-            mage:    { name: "Mage",    cost: 85,  range: 140, dmg: 12, rate: 750,  color: 0xff2d95, upCost: 65,  maxLvl: 3 },
-            tesla:   { name: "Tesla",   cost: 130, range: 150, dmg: 24, rate: 920,  color: 0xffee00, upCost: 95,  maxLvl: 3 },
-            cryo:    { name: "Cryo",    cost: 100, range: 145, dmg: 9,  rate: 680,  color: 0x66ccff, upCost: 75,  maxLvl: 3, slow: 0.5 },
-            toxic:   { name: "Toxic",   cost: 110, range: 135, dmg: 7,  rate: 580,  color: 0x39ff14, upCost: 80,  maxLvl: 3, dot: 5 },
-            plasma:  { name: "Plasma",  cost: 160, range: 175, dmg: 38, rate: 1150, color: 0xff6600, upCost: 120, maxLvl: 3 }
+            archer:  { name:"ARCHER",  cost:50,  range:160, dmg:15, rate:480,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
+            mage:    { name:"MAGE",    cost:85,  range:140, dmg:12, rate:750,  color:0xff2d95, upCost:65,  maxLvl:3, shot:"orb" },
+            tesla:   { name:"TESLA",   cost:130, range:150, dmg:24, rate:920,  color:0xffee00, upCost:95,  maxLvl:3, shot:"laser" },
+            cryo:    { name:"CRYO",    cost:100, range:145, dmg:9,  rate:680,  color:0x66ccff, upCost:75,  maxLvl:3, shot:"ice", slow:0.5 },
+            toxic:   { name:"TOXIC",   cost:110, range:135, dmg:7,  rate:580,  color:0x39ff14, upCost:80,  maxLvl:3, shot:"dot", dot:5 },
+            plasma:  { name:"PLASMA",  cost:160, range:175, dmg:38, rate:1150, color:0xff6600, upCost:120, maxLvl:3, shot:"plasma" }
         };
 
         const ENEMIES = {
-            goblin: { hp: 55,  speed: 82,  reward: 10, color: 0x39ff14, size: 13 },
-            runner: { hp: 34,  speed: 150, reward: 8,  color: 0x00ffcc, size: 10 },
-            orc:    { hp: 160, speed: 48,  reward: 22, color: 0xff3355, size: 17 },
-            bat:    { hp: 45,  speed: 120, reward: 13, color: 0xb14eff, size: 12 },
-            drone:  { hp: 105, speed: 68,  reward: 17, color: 0xffaa00, size: 15 },
-            golem:  { hp: 300, speed: 36,  reward: 40, color: 0x8888ff, size: 22 }
+            goblin: { hp:55,  speed:82,  reward:10, color:0x39ff14, size:13, shape:"circle" },
+            runner: { hp:34,  speed:150, reward:8,  color:0x00ffcc, size:10, shape:"diamond" },
+            orc:    { hp:160, speed:48,  reward:22, color:0xff3355, size:17, shape:"square" },
+            bat:    { hp:45,  speed:120, reward:13, color:0xb14eff, size:12, shape:"triangle" },
+            drone:  { hp:105, speed:68,  reward:17, color:0xffaa00, size:15, shape:"hex" },
+            golem:  { hp:300, speed:36,  reward:40, color:0x8888ff, size:22, shape:"square" }
         };
 
-        // Simple synthesized sounds
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function tone(freq, dur, type = "square", vol = 0.07) {
+        function tone(freq, dur, type="square", vol=0.07) {
             try {
-                const o = audioCtx.createOscillator();
-                const g = audioCtx.createGain();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
                 o.connect(g); g.connect(audioCtx.destination);
-                o.type = type; o.frequency.value = freq;
+                o.type=type; o.frequency.value=freq;
                 g.gain.setValueAtTime(vol, audioCtx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-                o.start(); o.stop(audioCtx.currentTime + dur);
-            } catch(e) {}
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
+                o.start(); o.stop(audioCtx.currentTime+dur);
+            } catch(e){}
         }
         const sfx = {
-            shoot: () => tone(780, 0.05),
-            hit:   () => tone(220, 0.09, "sawtooth"),
-            death: () => tone(130, 0.15, "triangle", 0.09),
-            wave:  () => { tone(440, 0.1, "sine"); tone(660, 0.16, "sine", 0.05); },
-            place: () => tone(560, 0.08, "triangle"),
-            up:    () => { tone(620, 0.07); tone(920, 0.11); }
+            shoot: () => tone(780,0.05),
+            hit:   () => tone(220,0.09,"sawtooth"),
+            death: () => tone(130,0.15,"triangle",0.09),
+            wave:  () => { tone(440,0.1,"sine"); tone(660,0.16,"sine",0.05); },
+            place: () => tone(560,0.08,"triangle"),
+            up:    () => { tone(620,0.07); tone(920,0.11); }
         };
 
         class GameScene extends Phaser.Scene {
-            constructor() { super("Game"); }
+            constructor(){ super("Game"); }
 
-            init() {
-                this.gold = 250;
-                this.lives = 25;
-                this.wave = 0;
-                this.enemies = [];
-                this.towers = [];
-                this.bullets = [];
-                this.selected = "archer";
-                this.waveActive = false;
-                this.spawnLeft = 0;
-                this.spawnTimer = 0;
-                this.paused = false;
-                this.speed = 1;
-                this.selectedTower = null;
+            init(){
+                this.gold=250; this.lives=25; this.wave=0;
+                this.enemies=[]; this.towers=[]; this.bullets=[];
+                this.selected="archer"; this.waveActive=false;
+                this.spawnLeft=0; this.spawnTimer=0;
+                this.paused=false; this.speed=1; this.selectedTower=null;
             }
 
-            create() {
-                // Unlock audio on first interaction
-                this.input.once("pointerdown", () => {
-                    if (audioCtx.state === "suspended") audioCtx.resume();
-                });
+            create(){
+                this.input.once("pointerdown", ()=>{ if(audioCtx.state==="suspended") audioCtx.resume(); });
 
-                // ===== NEON GRID BACKGROUND =====
+                // Neon grid
                 const grid = this.add.graphics();
-                grid.lineStyle(1, 0x00e5ff, 0.07);
-                for (let x = 0; x <= W; x += 40) {
-                    grid.moveTo(x, 0); grid.lineTo(x, H);
-                }
-                for (let y = 0; y <= H; y += 40) {
-                    grid.moveTo(0, y); grid.lineTo(W, y);
-                }
+                grid.lineStyle(1, 0x00e5ff, 0.08);
+                for(let x=0;x<=W;x+=40){ grid.moveTo(x,0); grid.lineTo(x,H); }
+                for(let y=0;y<=H;y+=40){ grid.moveTo(0,y); grid.lineTo(W,y); }
                 grid.strokePath();
+                this.add.rectangle(W/2,H/2,W,H,0x050510,0.5);
 
-                // Dark overlay
-                this.add.rectangle(W/2, H/2, W, H, 0x050510, 0.55);
+                // Placement grid (visible squares)
+                this.placeGrid = this.add.graphics();
+                this.placeGrid.lineStyle(1, 0x00e5ff, 0.15);
+                for(let x=40; x<W-40; x+=80){
+                    for(let y=120; y<H-160; y+=80){
+                        // skip path area roughly
+                        this.placeGrid.strokeRect(x, y, 70, 70);
+                    }
+                }
 
-                // ===== PATH =====
+                // Path
                 const pathG = this.add.graphics();
-                // Soft glow
-                pathG.lineStyle(38, 0x00e5ff, 0.06);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
+                pathG.lineStyle(36, 0x00e5ff, 0.07);
+                pathG.beginPath(); pathG.moveTo(PATH[0].x,PATH[0].y);
+                for(let i=1;i<PATH.length;i++) pathG.lineTo(PATH[i].x,PATH[i].y); pathG.strokePath();
+                pathG.lineStyle(20, 0x0a0a22, 1);
+                pathG.beginPath(); pathG.moveTo(PATH[0].x,PATH[0].y);
+                for(let i=1;i<PATH.length;i++) pathG.lineTo(PATH[i].x,PATH[i].y); pathG.strokePath();
+                pathG.lineStyle(3, 0x00e5ff, 0.6);
+                pathG.beginPath(); pathG.moveTo(PATH[0].x,PATH[0].y);
+                for(let i=1;i<PATH.length;i++) pathG.lineTo(PATH[i].x,PATH[i].y); pathG.strokePath();
 
-                // Main dark path
-                pathG.lineStyle(22, 0x0a0a22, 1);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
+                // Top bar
+                this.add.rectangle(W/2, 42, W, 84, 0x08081a, 0.95);
+                this.add.rectangle(W/2, 84, W, 2, 0x00e5ff, 0.4);
 
-                // Neon edge
-                pathG.lineStyle(3, 0x00e5ff, 0.55);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
+                this.goldText  = this.add.text(16, 10, "💰 250", {fontSize:"19px", color:"#ffd700", fontStyle:"bold"});
+                this.livesText = this.add.text(130, 10, "❤️ 25", {fontSize:"19px", color:"#ff4d6d", fontStyle:"bold"});
+                this.waveText  = this.add.text(250, 10, "WAVE 0", {fontSize:"19px", color:"#00e5ff", fontStyle:"bold"});
 
-                // ===== TOP UI BAR =====
-                this.add.rectangle(W/2, 38, W, 76, 0x08081a, 0.92);
-                this.add.rectangle(W/2, 76, W, 2, 0x00e5ff, 0.35);
+                // Control buttons (white, separated)
+                this.speedBtn = this.add.text(400, 14, "1X", {
+                    fontSize:"16px", color:"#ffffff", backgroundColor:"#222244", padding:{x:12,y:6}
+                }).setInteractive({useHandCursor:true});
+                this.speedBtn.on("pointerdown", ()=>this.cycleSpeed());
 
-                this.goldText  = this.add.text(18, 12, "💰 250", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
-                this.livesText = this.add.text(130, 12, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
-                this.waveText  = this.add.text(240, 12, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
+                this.pauseBtn = this.add.text(470, 14, "❚❚", {
+                    fontSize:"16px", color:"#ffffff", backgroundColor:"#442222", padding:{x:12,y:6}
+                }).setInteractive({useHandCursor:true});
+                this.pauseBtn.on("pointerdown", ()=>this.togglePause());
 
-                // Speed button
-                this.speedBtn = this.add.text(380, 18, "1X", {
-                    fontSize: "15px", color: "#ffffff", backgroundColor: "#1a1a40",
-                    padding: { x: 12, y: 6 }
-                }).setInteractive({ useHandCursor: true });
-                this.speedBtn.on("pointerdown", () => this.cycleSpeed());
+                this.startBtn = this.add.text(545, 14, "NEXT", {
+                    fontSize:"16px", color:"#ffffff", backgroundColor:"#224422", padding:{x:12,y:6}
+                }).setInteractive({useHandCursor:true});
+                this.startBtn.on("pointerdown", ()=>this.startWave());
 
-                // Pause button
-                this.pauseBtn = this.add.text(450, 18, "❚❚", {
-                    fontSize: "15px", color: "#ffffff", backgroundColor: "#401a1a",
-                    padding: { x: 12, y: 6 }
-                }).setInteractive({ useHandCursor: true });
-                this.pauseBtn.on("pointerdown", () => this.togglePause());
-
-                // Next Wave / Start
-                this.startBtn = this.add.text(560, 18, "NEXT", {
-                    fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322",
-                    padding: { x: 12, y: 6 }
-                }).setInteractive({ useHandCursor: true });
-                this.startBtn.on("pointerdown", () => this.startWave());
-
-                // ===== TOWER SELECT BUTTONS =====
-                const towerKeys = Object.keys(TOWERS);
-                towerKeys.forEach((key, i) => {
+                // Tower buttons - WHITE + BIGGER
+                const keys = Object.keys(TOWERS);
+                keys.forEach((key,i)=>{
                     const t = TOWERS[key];
-                    const btn = this.add.text(60 + i * 110, 55, t.name + "\n" + t.cost, {
-                        fontSize: "12px",
-                        color: "#e0e0ff",
-                        backgroundColor: "#151530",
-                        padding: { x: 10, y: 5 },
-                        align: "center"
-                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                    const btn = this.add.text(55 + i*112, 58, t.name+"\n"+t.cost, {
+                        fontSize:"14px",
+                        color:"#ffffff",
+                        backgroundColor:"#1a1a38",
+                        padding:{x:10,y:6},
+                        align:"center"
+                    }).setOrigin(0.5).setInteractive({useHandCursor:true});
 
-                    btn.on("pointerdown", () => {
+                    btn.on("pointerdown", ()=>{
                         this.selected = key;
                         this.selectedTower = null;
                         this.upPanel.setVisible(false);
-                        this.children.list.forEach(c => {
-                            if (c.type === "Text" && c.y === 55) c.setBackgroundColor("#151530");
+                        this.children.list.forEach(c=>{
+                            if(c.type==="Text" && c.y===58) c.setBackgroundColor("#1a1a38");
                         });
-                        btn.setBackgroundColor("#003d55");
+                        btn.setBackgroundColor("#005577");
                     });
-                    if (key === "archer") btn.setBackgroundColor("#003d55");
+                    if(key==="archer") btn.setBackgroundColor("#005577");
                 });
 
-                // ===== UPGRADE PANEL =====
-                this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
-                const upBg = this.add.rectangle(0, 0, 320, 80, 0x0c0c20, 0.95);
-                upBg.setStrokeStyle(2, 0x00e5ff, 0.4);
-                this.upText = this.add.text(0, -18, "", {
-                    fontSize: "14px", color: "#ffffff", align: "center"
-                }).setOrigin(0.5);
-                this.upBtn = this.add.text(0, 18, "UPGRADE", {
-                    fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322",
-                    padding: { x: 16, y: 6 }
-                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-                this.upBtn.on("pointerdown", () => this.upgradeSelected());
+                // Upgrade panel
+                this.upPanel = this.add.container(W/2, H-110).setVisible(false);
+                const upBg = this.add.rectangle(0,0,340,80,0x0c0c20,0.95);
+                upBg.setStrokeStyle(2,0x00e5ff,0.5);
+                this.upText = this.add.text(0,-16,"",{fontSize:"15px",color:"#fff",align:"center"}).setOrigin(0.5);
+                this.upBtn = this.add.text(0,20,"UPGRADE",{
+                    fontSize:"16px",color:"#00ff9d",backgroundColor:"#003322",padding:{x:16,y:7}
+                }).setOrigin(0.5).setInteractive({useHandCursor:true});
+                this.upBtn.on("pointerdown", ()=>this.upgradeSelected());
                 this.upPanel.add([upBg, this.upText, this.upBtn]);
 
-                // Input
-                this.input.on("pointerdown", (p) => {
-                    if (this.paused) return;
-                    if (p.y > 95 && p.y < H - 130) {
-                        let clicked = null;
-                        for (const tw of this.towers) {
-                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 30) {
-                                clicked = tw;
-                                break;
-                            }
+                this.input.on("pointerdown", (p)=>{
+                    if(this.paused) return;
+                    if(p.y>100 && p.y<H-140){
+                        let clicked=null;
+                        for(const tw of this.towers){
+                            if(Phaser.Math.Distance.Between(p.x,p.y,tw.x,tw.y)<32){ clicked=tw; break; }
                         }
-                        if (clicked) {
-                            this.selectedTower = clicked;
+                        if(clicked){
+                            this.selectedTower=clicked;
                             this.showUpgrade(clicked);
                         } else {
-                            this.selectedTower = null;
+                            this.selectedTower=null;
                             this.upPanel.setVisible(false);
-                            this.tryPlace(p.x, p.y);
+                            this.tryPlace(p.x,p.y);
                         }
                     }
                 });
 
-                // Watermark
                 this.add.text(W/2, H/2, "WOBBLE WALLS", {
-                    fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
-                }).setOrigin(0.5).setAlpha(0.035);
+                    fontSize:"46px", color:"#00e5ff", fontStyle:"bold"
+                }).setOrigin(0.5).setAlpha(0.04);
 
-                // Particle manager
-                this.hitParticles = this.add.particles(0, 0, "flare", {
-                    speed: { min: 40, max: 120 },
-                    scale: { start: 0.4, end: 0 },
-                    lifespan: 350,
-                    blendMode: "ADD",
-                    emitting: false
+                // Particle texture
+                const g = this.make.graphics({x:0,y:0,add:false});
+                g.fillStyle(0xffffff); g.fillCircle(4,4,4);
+                g.generateTexture("flare",8,8); g.destroy();
+                this.hitParticles = this.add.particles(0,0,"flare",{
+                    speed:{min:50,max:140}, scale:{start:0.5,end:0},
+                    lifespan:400, blendMode:"ADD", emitting:false
                 });
-                // Create a simple texture for particles
-                const gfx = this.make.graphics({ x: 0, y: 0, add: false });
-                gfx.fillStyle(0xffffff);
-                gfx.fillCircle(4, 4, 4);
-                gfx.generateTexture("flare", 8, 8);
-                gfx.destroy();
             }
 
-            cycleSpeed() {
-                this.speed = this.speed === 1 ? 2 : (this.speed === 2 ? 3 : 1);
-                this.speedBtn.setText(this.speed + "X");
+            cycleSpeed(){
+                this.speed = this.speed===1?2:this.speed===2?3:1;
+                this.speedBtn.setText(this.speed+"X");
+            }
+            togglePause(){
+                this.paused=!this.paused;
+                this.pauseBtn.setText(this.paused?"▶":"❚❚");
+                this.pauseBtn.setBackgroundColor(this.paused?"#225522":"#442222");
             }
 
-            togglePause() {
-                this.paused = !this.paused;
-                this.pauseBtn.setText(this.paused ? "▶" : "❚❚");
-                this.pauseBtn.setBackgroundColor(this.paused ? "#1a4020" : "#401a1a");
-            }
-
-            showUpgrade(tw) {
-                if (tw.lvl >= tw.data.maxLvl) {
+            showUpgrade(tw){
+                if(tw.lvl>=tw.data.maxLvl){
                     this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  MAX`);
                     this.upBtn.setVisible(false);
                 } else {
-                    const nextDmg = Math.floor(tw.data.dmg * 1.35);
-                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}\nDMG ${tw.data.dmg} → ${nextDmg}   Cost ${tw.data.upCost}`);
+                    const next=Math.floor(tw.data.dmg*1.35);
+                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}\nDMG ${tw.data.dmg} → ${next}   Cost ${tw.data.upCost}`);
                     this.upBtn.setVisible(true);
                 }
                 this.upPanel.setVisible(true);
             }
 
-            upgradeSelected() {
-                const tw = this.selectedTower;
-                if (!tw || tw.lvl >= tw.data.maxLvl) return;
-                if (this.gold < tw.data.upCost) return;
-
-                this.gold -= tw.data.upCost;
-                this.goldText.setText("💰 " + this.gold);
+            upgradeSelected(){
+                const tw=this.selectedTower;
+                if(!tw||tw.lvl>=tw.data.maxLvl) return;
+                if(this.gold<tw.data.upCost) return;
+                this.gold-=tw.data.upCost;
+                this.goldText.setText("💰 "+this.gold);
                 tw.lvl++;
-                tw.data.dmg = Math.floor(tw.data.dmg * 1.35);
-                tw.data.range = Math.floor(tw.data.range * 1.1);
+                tw.data.dmg=Math.floor(tw.data.dmg*1.35);
+                tw.data.range=Math.floor(tw.data.range*1.1);
                 tw.core.setFillStyle(tw.data.color);
-                tw.glow.setRadius(22 + tw.lvl * 4);
+                tw.glow.setRadius(24+tw.lvl*4);
                 sfx.up();
                 this.showUpgrade(tw);
             }
 
-            tryPlace(x, y) {
-                const t = TOWERS[this.selected];
-                if (this.gold < t.cost) return;
-
-                // Not on path
-                for (let i = 0; i < PATH.length - 1; i++) {
-                    if (this.distToLine(x, y, PATH[i], PATH[i + 1]) < 36) return;
+            tryPlace(x,y){
+                const t=TOWERS[this.selected];
+                if(this.gold<t.cost) return;
+                for(let i=0;i<PATH.length-1;i++){
+                    if(this.distToLine(x,y,PATH[i],PATH[i+1])<38) return;
                 }
-                // Not overlapping
-                for (const tw of this.towers) {
-                    if (Phaser.Math.Distance.Between(x, y, tw.x, tw.y) < 48) return;
+                for(const tw of this.towers){
+                    if(Phaser.Math.Distance.Between(x,y,tw.x,tw.y)<50) return;
                 }
-
-                this.gold -= t.cost;
-                this.goldText.setText("💰 " + this.gold);
+                this.gold-=t.cost;
+                this.goldText.setText("💰 "+this.gold);
                 sfx.place();
 
-                // Better looking tower
-                const base = this.add.circle(x, y, 18, 0x0a0a18);
-                base.setStrokeStyle(2, t.color, 0.6);
-                const core = this.add.circle(x, y, 11, t.color);
-                const glow = this.add.circle(x, y, 24, t.color, 0.25);
-                const range = this.add.circle(x, y, t.range, t.color, 0.04);
+                // Different tower shapes
+                const base=this.add.circle(x,y,19,0x0a0a18);
+                base.setStrokeStyle(2,t.color,0.7);
 
-                this.towers.push({
-                    x, y,
-                    data: Object.assign({}, t),
-                    lvl: 1,
-                    last: 0,
-                    core, glow, range, base
-                });
+                let core;
+                if(t.shot==="laser"){
+                    core=this.add.rectangle(x,y,16,16,t.color).setAngle(45);
+                } else if(t.shot==="orb"||t.shot==="plasma"){
+                    core=this.add.circle(x,y,12,t.color);
+                } else if(t.shot==="ice"){
+                    core=this.add.star(x,y,6,6,12,t.color);
+                } else {
+                    core=this.add.triangle(x,y,0,-12,12,12,-12,12,t.color);
+                }
+
+                const glow=this.add.circle(x,y,26,t.color,0.28);
+                const range=this.add.circle(x,y,t.range,t.color,0.05);
+
+                this.towers.push({x,y,data:Object.assign({},t),lvl:1,last:0,core,glow,range,base});
             }
 
-            distToLine(px, py, a, b) {
-                const dx = b.x - a.x, dy = b.y - a.y;
-                const len = dx * dx + dy * dy || 1;
-                let t = ((px - a.x) * dx + (py - a.y) * dy) / len;
-                t = Phaser.Math.Clamp(t, 0, 1);
-                return Phaser.Math.Distance.Between(px, py, a.x + t * dx, a.y + t * dy);
+            distToLine(px,py,a,b){
+                const dx=b.x-a.x,dy=b.y-a.y,len=dx*dx+dy*dy||1;
+                let t=((px-a.x)*dx+(py-a.y)*dy)/len;
+                t=Phaser.Math.Clamp(t,0,1);
+                return Phaser.Math.Distance.Between(px,py,a.x+t*dx,a.y+t*dy);
             }
 
-            startWave() {
-                if (this.waveActive || this.paused) return;
-                this.wave++;
-                this.waveText.setText("WAVE " + this.wave);
-                this.waveActive = true;
-                this.spawnLeft = 8 + this.wave * 2;
-                this.spawnTimer = 0;
+            startWave(){
+                if(this.waveActive||this.paused) return;
+                this.wave++; this.waveText.setText("WAVE "+this.wave);
+                this.waveActive=true; this.spawnLeft=8+this.wave*2; this.spawnTimer=0;
                 sfx.wave();
             }
 
-            spawn() {
-                const keys = Object.keys(ENEMIES);
-                let key = keys[0];
-                if (this.wave >= 3) key = keys[Phaser.Math.Between(0, 1)];
-                if (this.wave >= 5) key = keys[Phaser.Math.Between(0, 2)];
-                if (this.wave >= 7) key = keys[Phaser.Math.Between(0, 4)];
-                if (this.wave >= 10) key = keys[Phaser.Math.Between(0, 5)];
+            spawn(){
+                const keys=Object.keys(ENEMIES);
+                let key=keys[0];
+                if(this.wave>=3) key=keys[Phaser.Math.Between(0,1)];
+                if(this.wave>=5) key=keys[Phaser.Math.Between(0,2)];
+                if(this.wave>=7) key=keys[Phaser.Math.Between(0,4)];
+                if(this.wave>=10) key=keys[Phaser.Math.Between(0,5)];
 
-                const d = ENEMIES[key];
-                const mult = 1 + (this.wave - 1) * 0.24;
+                const d=ENEMIES[key];
+                const mult=1+(this.wave-1)*0.24;
 
-                const body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
-                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 5, d.color, 0.3);
-                ring.setStrokeStyle(2, d.color, 0.7);
+                let body;
+                if(d.shape==="square") body=this.add.rectangle(PATH[0].x,PATH[0].y,d.size*1.6,d.size*1.6,d.color);
+                else if(d.shape==="diamond") body=this.add.rectangle(PATH[0].x,PATH[0].y,d.size*1.5,d.size*1.5,d.color).setAngle(45);
+                else if(d.shape==="triangle") body=this.add.triangle(PATH[0].x,PATH[0].y,0,-d.size,d.size,d.size,-d.size,d.size,d.color);
+                else body=this.add.circle(PATH[0].x,PATH[0].y,d.size,d.color);
+
+                const ring=this.add.circle(PATH[0].x,PATH[0].y,d.size+6,d.color,0.25);
+                ring.setStrokeStyle(2,d.color,0.8);
 
                 this.enemies.push({
-                    x: PATH[0].x, y: PATH[0].y,
-                    hp: d.hp * mult,
-                    max: d.hp * mult,
-                    speed: d.speed,
-                    reward: d.reward,
-                    idx: 0,
-                    body, ring,
-                    slow: 1,
-                    dot: 0
+                    x:PATH[0].x,y:PATH[0].y,hp:d.hp*mult,max:d.hp*mult,
+                    speed:d.speed,reward:d.reward,idx:0,body,ring,slow:1,dot:0
                 });
             }
 
-            update(time, delta) {
-                if (this.paused) return;
-                delta *= this.speed;
+            update(time,delta){
+                if(this.paused) return;
+                delta*=this.speed;
 
-                // Spawn
-                if (this.waveActive && this.spawnLeft > 0) {
-                    this.spawnTimer += delta;
-                    if (this.spawnTimer > 560) {
-                        this.spawn();
-                        this.spawnLeft--;
-                        this.spawnTimer = 0;
+                if(this.waveActive&&this.spawnLeft>0){
+                    this.spawnTimer+=delta;
+                    if(this.spawnTimer>550){ this.spawn(); this.spawnLeft--; this.spawnTimer=0; }
+                }
+
+                // Enemies
+                for(let i=this.enemies.length-1;i>=0;i--){
+                    const e=this.enemies[i];
+                    if(e.dot>0) e.hp-=e.dot*(delta/1000);
+                    const next=PATH[e.idx+1];
+                    if(!next){
+                        this.lives--; this.livesText.setText("❤️ "+this.lives);
+                        e.body.destroy(); e.ring.destroy();
+                        this.enemies.splice(i,1);
+                        if(this.lives<=0) this.gameOver();
+                        continue;
+                    }
+                    const dist=Phaser.Math.Distance.Between(e.x,e.y,next.x,next.y);
+                    if(dist<6) e.idx++;
+                    else {
+                        const ang=Phaser.Math.Angle.Between(e.x,e.y,next.x,next.y);
+                        const spd=e.speed*e.slow;
+                        e.x+=Math.cos(ang)*spd*delta/1000;
+                        e.y+=Math.sin(ang)*spd*delta/1000;
+                        e.body.setPosition(e.x,e.y);
+                        e.ring.setPosition(e.x,e.y);
+                    }
+                    if(e.hp<=0){
+                        this.gold+=e.reward; this.goldText.setText("💰 "+this.gold);
+                        this.hitParticles.setPosition(e.x,e.y); this.hitParticles.explode(14);
+                        e.body.destroy(); e.ring.destroy();
+                        this.enemies.splice(i,1); sfx.death();
                     }
                 }
 
-                // Move enemies
-                for (let i = this.enemies.length - 1; i >= 0; i--) {
-                    const e = this.enemies[i];
+                // Towers
+                for(const tw of this.towers){
+                    if(time-tw.last < tw.data.rate/this.speed) continue;
+                    let target=null, best=tw.data.range;
+                    for(const e of this.enemies){
+                        const d=Phaser.Math.Distance.Between(tw.x,tw.y,e.x,e.y);
+                        if(d<best){ best=d; target=e; }
+                    }
+                    if(target){ this.fire(tw,target); tw.last=time; sfx.shoot(); }
+                }
 
-                    if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
+                // Bullets / lasers
+                for(let i=this.bullets.length-1;i>=0;i--){
+                    const b=this.bullets[i];
+                    if(!b.target||!b.target.body.active){
+                        b.gfx.destroy(); if(b.trail) b.trail.destroy();
+                        this.bullets.splice(i,1); continue;
+                    }
 
-                    const next = PATH[e.idx + 1];
-                    if (!next) {
-                        this.lives--;
-                        this.livesText.setText("❤️ " + this.lives);
-                        e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i, 1);
-                        if (this.lives <= 0) this.gameOver();
+                    if(b.type==="laser"){
+                        // Laser is instant visual, already handled
+                        b.life-=delta;
+                        if(b.life<=0){ b.gfx.destroy(); this.bullets.splice(i,1); }
                         continue;
                     }
 
-                    const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
-                    if (dist < 6) {
-                        e.idx++;
-                    } else {
-                        const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
-                        const spd = e.speed * e.slow;
-                        e.x += Math.cos(ang) * spd * delta / 1000;
-                        e.y += Math.sin(ang) * spd * delta / 1000;
-                        e.body.setPosition(e.x, e.y);
-                        e.ring.setPosition(e.x, e.y);
-                    }
+                    const ang=Phaser.Math.Angle.Between(b.x,b.y,b.target.x,b.target.y);
+                    b.x+=Math.cos(ang)*b.spd*delta/1000;
+                    b.y+=Math.sin(ang)*b.spd*delta/1000;
+                    b.gfx.setPosition(b.x,b.y);
+                    if(b.trail) b.trail.setPosition(b.x,b.y);
 
-                    if (e.hp <= 0) {
-                        this.gold += e.reward;
-                        this.goldText.setText("💰 " + this.gold);
-                        // death particles
-                        this.hitParticles.setPosition(e.x, e.y);
-                        this.hitParticles.explode(12);
-                        e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i, 1);
-                        sfx.death();
+                    if(Phaser.Math.Distance.Between(b.x,b.y,b.target.x,b.target.y)<15){
+                        b.target.hp-=b.dmg;
+                        if(b.slow) b.target.slow=Math.min(b.target.slow,b.slow);
+                        if(b.dot) b.target.dot=Math.max(b.target.dot,b.dot);
+                        this.hitParticles.setPosition(b.x,b.y); this.hitParticles.explode(8);
+                        b.gfx.destroy(); if(b.trail) b.trail.destroy();
+                        this.bullets.splice(i,1); sfx.hit();
                     }
                 }
 
-                // Towers shoot
-                for (const tw of this.towers) {
-                    if (time - tw.last < tw.data.rate / this.speed) continue;
-
-                    let target = null;
-                    let best = tw.data.range;
-                    for (const e of this.enemies) {
-                        const d = Phaser.Math.Distance.Between(tw.x, tw.y, e.x, e.y);
-                        if (d < best) {
-                            best = d;
-                            target = e;
-                        }
-                    }
-                    if (target) {
-                        this.fire(tw, target);
-                        tw.last = time;
-                        sfx.shoot();
-                    }
-                }
-
-                // Bullets
-                for (let i = this.bullets.length - 1; i >= 0; i--) {
-                    const b = this.bullets[i];
-                    if (!b.target || !b.target.body.active) {
-                        b.gfx.destroy();
-                        if (b.trail) b.trail.destroy();
-                        this.bullets.splice(i, 1);
-                        continue;
-                    }
-
-                    const ang = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
-                    b.x += Math.cos(ang) * b.spd * delta / 1000;
-                    b.y += Math.sin(ang) * b.spd * delta / 1000;
-                    b.gfx.setPosition(b.x, b.y);
-                    if (b.trail) b.trail.setPosition(b.x, b.y);
-
-                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 14) {
-                        b.target.hp -= b.dmg;
-                        if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
-                        if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
-
-                        this.hitParticles.setPosition(b.x, b.y);
-                        this.hitParticles.explode(6);
-
-                        b.gfx.destroy();
-                        if (b.trail) b.trail.destroy();
-                        this.bullets.splice(i, 1);
-                        sfx.hit();
-                    }
-                }
-
-                // Wave complete
-                if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
-                    this.waveActive = false;
-                    this.gold += 35 + this.wave * 12;
-                    this.goldText.setText("💰 " + this.gold);
+                if(this.waveActive&&this.spawnLeft<=0&&this.enemies.length===0){
+                    this.waveActive=false;
+                    this.gold+=40+this.wave*12;
+                    this.goldText.setText("💰 "+this.gold);
                 }
             }
 
-            fire(tw, target) {
-                // Glowing bullet + soft trail
-                const gfx = this.add.circle(tw.x, tw.y, 5, 0xffffff);
-                const trail = this.add.circle(tw.x, tw.y, 9, tw.data.color, 0.35);
+            fire(tw, target){
+                const type = tw.data.shot;
+
+                if(type==="laser"){
+                    // Instant laser line
+                    const line = this.add.line(0,0,tw.x,tw.y,target.x,target.y,tw.data.color)
+                        .setOrigin(0,0).setLineWidth(4).setAlpha(0.9);
+                    target.hp -= tw.data.dmg;
+                    this.hitParticles.setPosition(target.x,target.y); this.hitParticles.explode(10);
+                    this.bullets.push({ type:"laser", gfx:line, life:120, target });
+                    return;
+                }
+
+                let gfx, trail=null;
+                if(type==="orb"||type==="plasma"){
+                    gfx = this.add.circle(tw.x,tw.y,7,tw.data.color);
+                    trail = this.add.circle(tw.x,tw.y,12,tw.data.color,0.3);
+                } else if(type==="ice"){
+                    gfx = this.add.star(tw.x,tw.y,5,3,7,tw.data.color);
+                } else {
+                    gfx = this.add.circle(tw.x,tw.y,5,0xffffff);
+                    trail = this.add.circle(tw.x,tw.y,9,tw.data.color,0.35);
+                }
 
                 this.bullets.push({
-                    x: tw.x, y: tw.y,
-                    target,
-                    dmg: tw.data.dmg,
-                    spd: 520,
-                    slow: tw.data.slow || 0,
-                    dot: tw.data.dot || 0,
-                    gfx, trail
+                    x:tw.x, y:tw.y, target,
+                    dmg:tw.data.dmg, spd: type==="plasma"?380:520,
+                    slow:tw.data.slow||0, dot:tw.data.dot||0,
+                    gfx, trail, type
                 });
             }
 
-            gameOver() {
-                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.8);
-                this.add.text(W/2, H/2 - 30, "GAME OVER", {
-                    fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
-                }).setOrigin(0.5);
-                this.add.text(W/2, H/2 + 30, "Refresh page to restart", {
-                    fontSize: "18px", color: "#aaaaaa"
-                }).setOrigin(0.5);
+            gameOver(){
+                this.add.rectangle(W/2,H/2,W,H,0x000000,0.82);
+                this.add.text(W/2,H/2-30,"GAME OVER",{fontSize:"56px",color:"#ff2d55",fontStyle:"bold"}).setOrigin(0.5);
+                this.add.text(W/2,H/2+30,"Refresh to restart",{fontSize:"18px",color:"#aaa"}).setOrigin(0.5);
                 this.input.off("pointerdown");
                 this.startBtn.disableInteractive();
             }
@@ -520,10 +443,7 @@
             height: H,
             parent: "game-container",
             backgroundColor: "#03030a",
-            scale: {
-                mode: Phaser.Scale.FIT,
-                autoCenter: Phaser.Scale.CENTER_BOTH
-            },
+            scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
             scene: [GameScene]
         });
     </script>
