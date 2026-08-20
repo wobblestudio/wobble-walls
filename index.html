@@ -7,63 +7,86 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background: #050510; width: 100%; height: 100%; overflow: hidden; }
+        html, body {
+            background: #03030a;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
         #game-container { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
-    <script>
-        const W = 720;
-        const H = 1180;
 
+    <script>
+        // =====================================================
+        // WOBBLE WALLS - Neon Cyber Tower Defense
+        // Visual style inspired by modern neon TD games
+        // =====================================================
+
+        const W = 720;
+        const H = 1280;
+
+        // Path (starts from top)
         const PATH = [
-            {x:360,y:-50},{x:360,y:180},{x:140,y:180},{x:140,y:420},
-            {x:560,y:420},{x:560,y:680},{x:200,y:680},{x:200,y:920},
-            {x:360,y:920},{x:360,y:1220}
+            {x: 360, y: -60},
+            {x: 360, y: 200},
+            {x: 140, y: 200},
+            {x: 140, y: 460},
+            {x: 560, y: 460},
+            {x: 560, y: 740},
+            {x: 200, y: 740},
+            {x: 200, y: 980},
+            {x: 360, y: 980},
+            {x: 360, y: 1320}
         ];
 
         const TOWERS = {
-            archer:  { name:"Neon Archer",  cost:50,  range:155, dmg:14, rate:500,  color:0x00e5ff, upCost:40,  maxLvl:3 },
-            mage:    { name:"Arcane Mage",  cost:85,  range:135, dmg:11, rate:780,  color:0xff2d95, upCost:60,  maxLvl:3 },
-            tesla:   { name:"Tesla Coil",   cost:130, range:145, dmg:22, rate:950,  color:0xffee00, upCost:90,  maxLvl:3 },
-            cryo:    { name:"Cryo Turret",  cost:100, range:140, dmg:8,  rate:700,  color:0x66ccff, upCost:70,  maxLvl:3, slow:0.45 },
-            toxic:   { name:"Toxic Spitter",cost:110, range:130, dmg:6,  rate:600,  color:0x39ff14, upCost:75,  maxLvl:3, dot:4 },
-            plasma:  { name:"Plasma Cannon",cost:160, range:170, dmg:35, rate:1200, color:0xff6600, upCost:110, maxLvl:3 }
+            archer:  { name: "Archer",  cost: 50,  range: 160, dmg: 15, rate: 480,  color: 0x00f0ff, upCost: 40,  maxLvl: 3 },
+            mage:    { name: "Mage",    cost: 85,  range: 140, dmg: 12, rate: 750,  color: 0xff2d95, upCost: 65,  maxLvl: 3 },
+            tesla:   { name: "Tesla",   cost: 130, range: 150, dmg: 24, rate: 920,  color: 0xffee00, upCost: 95,  maxLvl: 3 },
+            cryo:    { name: "Cryo",    cost: 100, range: 145, dmg: 9,  rate: 680,  color: 0x66ccff, upCost: 75,  maxLvl: 3, slow: 0.5 },
+            toxic:   { name: "Toxic",   cost: 110, range: 135, dmg: 7,  rate: 580,  color: 0x39ff14, upCost: 80,  maxLvl: 3, dot: 5 },
+            plasma:  { name: "Plasma",  cost: 160, range: 175, dmg: 38, rate: 1150, color: 0xff6600, upCost: 120, maxLvl: 3 }
         };
 
         const ENEMIES = {
-            goblin: { hp:50,  speed:80,  reward:9,  color:0x39ff14, size:12 },
-            runner: { hp:32,  speed:145, reward:7,  color:0x00ffcc, size:9  },
-            orc:    { hp:150, speed:48,  reward:20, color:0xff3355, size:16 },
-            bat:    { hp:42,  speed:115, reward:12, color:0xb14eff, size:11 },
-            drone:  { hp:100, speed:65,  reward:16, color:0xffaa00, size:14 },
-            golem:  { hp:280, speed:35,  reward:35, color:0x8888ff, size:20 }
+            goblin: { hp: 55,  speed: 82,  reward: 10, color: 0x39ff14, size: 13 },
+            runner: { hp: 34,  speed: 150, reward: 8,  color: 0x00ffcc, size: 10 },
+            orc:    { hp: 160, speed: 48,  reward: 22, color: 0xff3355, size: 17 },
+            bat:    { hp: 45,  speed: 120, reward: 13, color: 0xb14eff, size: 12 },
+            drone:  { hp: 105, speed: 68,  reward: 17, color: 0xffaa00, size: 15 },
+            golem:  { hp: 300, speed: 36,  reward: 40, color: 0x8888ff, size: 22 }
         };
 
+        // Simple synthesized sounds
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function tone(freq, dur, type="square", vol=0.07) {
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            o.type = type; o.frequency.value = freq;
-            g.gain.setValueAtTime(vol, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-            o.start(); o.stop(audioCtx.currentTime + dur);
+        function tone(freq, dur, type = "square", vol = 0.07) {
+            try {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.type = type; o.frequency.value = freq;
+                g.gain.setValueAtTime(vol, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+                o.start(); o.stop(audioCtx.currentTime + dur);
+            } catch(e) {}
         }
         const sfx = {
-            shoot: () => tone(720, 0.06),
-            hit:   () => tone(200, 0.1, "sawtooth"),
-            death: () => tone(110, 0.16, "triangle", 0.09),
-            wave:  () => { tone(440,0.12,"sine"); tone(660,0.18,"sine",0.05); },
-            place: () => tone(540, 0.09, "triangle"),
-            up:    () => { tone(600,0.08); tone(900,0.12); }
+            shoot: () => tone(780, 0.05),
+            hit:   () => tone(220, 0.09, "sawtooth"),
+            death: () => tone(130, 0.15, "triangle", 0.09),
+            wave:  () => { tone(440, 0.1, "sine"); tone(660, 0.16, "sine", 0.05); },
+            place: () => tone(560, 0.08, "triangle"),
+            up:    () => { tone(620, 0.07); tone(920, 0.11); }
         };
 
-        class Game extends Phaser.Scene {
+        class GameScene extends Phaser.Scene {
             constructor() { super("Game"); }
 
             init() {
-                this.gold = 220;
+                this.gold = 250;
                 this.lives = 25;
                 this.wave = 0;
                 this.enemies = [];
@@ -79,85 +102,124 @@
             }
 
             create() {
-                this.input.once("pointerdown", () => { if (audioCtx.state === "suspended") audioCtx.resume(); });
+                // Unlock audio on first interaction
+                this.input.once("pointerdown", () => {
+                    if (audioCtx.state === "suspended") audioCtx.resume();
+                });
 
-                this.add.rectangle(W/2, H/2, W, H, 0x07071a);
+                // ===== NEON GRID BACKGROUND =====
+                const grid = this.add.graphics();
+                grid.lineStyle(1, 0x00e5ff, 0.07);
+                for (let x = 0; x <= W; x += 40) {
+                    grid.moveTo(x, 0); grid.lineTo(x, H);
+                }
+                for (let y = 0; y <= H; y += 40) {
+                    grid.moveTo(0, y); grid.lineTo(W, y);
+                }
+                grid.strokePath();
 
-                // Path
-                const g = this.add.graphics();
-                g.lineStyle(32, 0x00e5ff, 0.05);
-                g.beginPath(); g.moveTo(PATH[0].x, PATH[0].y);
-                for (let i=1;i<PATH.length;i++) g.lineTo(PATH[i].x, PATH[i].y); g.strokePath();
-                g.lineStyle(18, 0x0e0e24, 1);
-                g.beginPath(); g.moveTo(PATH[0].x, PATH[0].y);
-                for (let i=1;i<PATH.length;i++) g.lineTo(PATH[i].x, PATH[i].y); g.strokePath();
-                g.lineStyle(2.5, 0x00e5ff, 0.45);
-                g.beginPath(); g.moveTo(PATH[0].x, PATH[0].y);
-                for (let i=1;i<PATH.length;i++) g.lineTo(PATH[i].x, PATH[i].y); g.strokePath();
+                // Dark overlay
+                this.add.rectangle(W/2, H/2, W, H, 0x050510, 0.55);
 
-                // Top UI
-                this.add.rectangle(W/2, 36, W, 72, 0x0b0b1a, 0.95);
-                this.add.rectangle(W/2, 72, W, 2, 0x00e5ff, 0.25);
+                // ===== PATH =====
+                const pathG = this.add.graphics();
+                // Soft glow
+                pathG.lineStyle(38, 0x00e5ff, 0.06);
+                pathG.beginPath();
+                pathG.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                pathG.strokePath();
 
-                this.goldText  = this.add.text(16, 14, "GOLD 220",  { fontSize:"16px", color:"#ffd700", fontStyle:"bold" });
-                this.livesText = this.add.text(140, 14, "LIVES 25", { fontSize:"16px", color:"#ff4d6d", fontStyle:"bold" });
-                this.waveText  = this.add.text(270, 14, "WAVE 0",   { fontSize:"16px", color:"#00e5ff", fontStyle:"bold" });
+                // Main dark path
+                pathG.lineStyle(22, 0x0a0a22, 1);
+                pathG.beginPath();
+                pathG.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                pathG.strokePath();
 
-                // Speed & Pause
-                this.speedBtn = this.add.text(400, 22, "x1", {
-                    fontSize:"15px", color:"#fff", backgroundColor:"#222244", padding:{x:10,y:5}
-                }).setInteractive({useHandCursor:true});
+                // Neon edge
+                pathG.lineStyle(3, 0x00e5ff, 0.55);
+                pathG.beginPath();
+                pathG.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                pathG.strokePath();
+
+                // ===== TOP UI BAR =====
+                this.add.rectangle(W/2, 38, W, 76, 0x08081a, 0.92);
+                this.add.rectangle(W/2, 76, W, 2, 0x00e5ff, 0.35);
+
+                this.goldText  = this.add.text(18, 12, "💰 250", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
+                this.livesText = this.add.text(130, 12, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
+                this.waveText  = this.add.text(240, 12, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
+
+                // Speed button
+                this.speedBtn = this.add.text(380, 18, "1X", {
+                    fontSize: "15px", color: "#ffffff", backgroundColor: "#1a1a40",
+                    padding: { x: 12, y: 6 }
+                }).setInteractive({ useHandCursor: true });
                 this.speedBtn.on("pointerdown", () => this.cycleSpeed());
 
-                this.pauseBtn = this.add.text(460, 22, "PAUSE", {
-                    fontSize:"15px", color:"#fff", backgroundColor:"#442222", padding:{x:10,y:5}
-                }).setInteractive({useHandCursor:true});
+                // Pause button
+                this.pauseBtn = this.add.text(450, 18, "❚❚", {
+                    fontSize: "15px", color: "#ffffff", backgroundColor: "#401a1a",
+                    padding: { x: 12, y: 6 }
+                }).setInteractive({ useHandCursor: true });
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
 
-                // Tower buttons
-                const keys = Object.keys(TOWERS);
-                keys.forEach((k, i) => {
-                    const t = TOWERS[k];
-                    const btn = this.add.text(70 + i*110, 52, t.name.split(" ")[1] + "\n" + t.cost, {
-                        fontSize:"11px", color:"#ddd", backgroundColor:"#1a1a32",
-                        padding:{x:8,y:4}, align:"center"
-                    }).setOrigin(0.5).setInteractive({useHandCursor:true});
+                // Next Wave / Start
+                this.startBtn = this.add.text(560, 18, "NEXT", {
+                    fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322",
+                    padding: { x: 12, y: 6 }
+                }).setInteractive({ useHandCursor: true });
+                this.startBtn.on("pointerdown", () => this.startWave());
+
+                // ===== TOWER SELECT BUTTONS =====
+                const towerKeys = Object.keys(TOWERS);
+                towerKeys.forEach((key, i) => {
+                    const t = TOWERS[key];
+                    const btn = this.add.text(60 + i * 110, 55, t.name + "\n" + t.cost, {
+                        fontSize: "12px",
+                        color: "#e0e0ff",
+                        backgroundColor: "#151530",
+                        padding: { x: 10, y: 5 },
+                        align: "center"
+                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
                     btn.on("pointerdown", () => {
-                        this.selected = k;
+                        this.selected = key;
                         this.selectedTower = null;
+                        this.upPanel.setVisible(false);
                         this.children.list.forEach(c => {
-                            if (c.type==="Text" && c.text.includes("\n") && c.y===52) c.setBackgroundColor("#1a1a32");
+                            if (c.type === "Text" && c.y === 55) c.setBackgroundColor("#151530");
                         });
                         btn.setBackgroundColor("#003d55");
                     });
-                    if (k==="archer") btn.setBackgroundColor("#003d55");
+                    if (key === "archer") btn.setBackgroundColor("#003d55");
                 });
 
-                // Start Wave
-                this.startBtn = this.add.text(W/2, H-42, "▶ START WAVE", {
-                    fontSize:"18px", color:"#00ff9d", backgroundColor:"#003d2e",
-                    padding:{x:18,y:10}
-                }).setOrigin(0.5).setInteractive({useHandCursor:true});
-                this.startBtn.on("pointerdown", () => this.startWave());
-
-                // Upgrade panel (hidden)
-                this.upPanel = this.add.container(W/2, H-120).setVisible(false);
-                this.upBg = this.add.rectangle(0, 0, 300, 70, 0x111122, 0.95);
-                this.upText = this.add.text(0, -12, "", { fontSize:"14px", color:"#fff", align:"center" }).setOrigin(0.5);
+                // ===== UPGRADE PANEL =====
+                this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
+                const upBg = this.add.rectangle(0, 0, 320, 80, 0x0c0c20, 0.95);
+                upBg.setStrokeStyle(2, 0x00e5ff, 0.4);
+                this.upText = this.add.text(0, -18, "", {
+                    fontSize: "14px", color: "#ffffff", align: "center"
+                }).setOrigin(0.5);
                 this.upBtn = this.add.text(0, 18, "UPGRADE", {
-                    fontSize:"14px", color:"#00ff9d", backgroundColor:"#003322", padding:{x:12,y:5}
-                }).setOrigin(0.5).setInteractive({useHandCursor:true});
-                this.upBtn.on("pointerdown", () => this.upgradeTower());
-                this.upPanel.add([this.upBg, this.upText, this.upBtn]);
+                    fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322",
+                    padding: { x: 16, y: 6 }
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                this.upBtn.on("pointerdown", () => this.upgradeSelected());
+                this.upPanel.add([upBg, this.upText, this.upBtn]);
 
+                // Input
                 this.input.on("pointerdown", (p) => {
                     if (this.paused) return;
-                    if (p.y > 90 && p.y < H-100) {
-                        // Check click on existing tower
+                    if (p.y > 95 && p.y < H - 130) {
                         let clicked = null;
                         for (const tw of this.towers) {
-                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 28) {
-                                clicked = tw; break;
+                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 30) {
+                                clicked = tw;
+                                break;
                             }
                         }
                         if (clicked) {
@@ -171,41 +233,62 @@
                     }
                 });
 
+                // Watermark
                 this.add.text(W/2, H/2, "WOBBLE WALLS", {
-                    fontSize:"40px", color:"#00e5ff", fontStyle:"bold"
-                }).setOrigin(0.5).setAlpha(0.04);
+                    fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
+                }).setOrigin(0.5).setAlpha(0.035);
+
+                // Particle manager
+                this.hitParticles = this.add.particles(0, 0, "flare", {
+                    speed: { min: 40, max: 120 },
+                    scale: { start: 0.4, end: 0 },
+                    lifespan: 350,
+                    blendMode: "ADD",
+                    emitting: false
+                });
+                // Create a simple texture for particles
+                const gfx = this.make.graphics({ x: 0, y: 0, add: false });
+                gfx.fillStyle(0xffffff);
+                gfx.fillCircle(4, 4, 4);
+                gfx.generateTexture("flare", 8, 8);
+                gfx.destroy();
             }
 
             cycleSpeed() {
-                this.speed = this.speed === 1 ? 2 : this.speed === 2 ? 3 : 1;
-                this.speedBtn.setText("x" + this.speed);
+                this.speed = this.speed === 1 ? 2 : (this.speed === 2 ? 3 : 1);
+                this.speedBtn.setText(this.speed + "X");
             }
 
             togglePause() {
                 this.paused = !this.paused;
-                this.pauseBtn.setText(this.paused ? "RESUME" : "PAUSE");
-                this.pauseBtn.setBackgroundColor(this.paused ? "#225522" : "#442222");
+                this.pauseBtn.setText(this.paused ? "▶" : "❚❚");
+                this.pauseBtn.setBackgroundColor(this.paused ? "#1a4020" : "#401a1a");
             }
 
             showUpgrade(tw) {
-                const d = tw.data;
-                const nextDmg = Math.floor(d.dmg * (1 + tw.lvl * 0.35));
-                this.upText.setText(`\( {d.name}  Lv \){tw.lvl}\nDMG ${d.dmg} → ${nextDmg}   Cost ${d.upCost}`);
-                this.upPanel.setVisible(tw.lvl < d.maxLvl);
+                if (tw.lvl >= tw.data.maxLvl) {
+                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  MAX`);
+                    this.upBtn.setVisible(false);
+                } else {
+                    const nextDmg = Math.floor(tw.data.dmg * 1.35);
+                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}\nDMG ${tw.data.dmg} → ${nextDmg}   Cost ${tw.data.upCost}`);
+                    this.upBtn.setVisible(true);
+                }
+                this.upPanel.setVisible(true);
             }
 
-            upgradeTower() {
+            upgradeSelected() {
                 const tw = this.selectedTower;
                 if (!tw || tw.lvl >= tw.data.maxLvl) return;
                 if (this.gold < tw.data.upCost) return;
+
                 this.gold -= tw.data.upCost;
-                this.goldText.setText("GOLD " + this.gold);
+                this.goldText.setText("💰 " + this.gold);
                 tw.lvl++;
-                tw.data = Object.assign({}, tw.data);
                 tw.data.dmg = Math.floor(tw.data.dmg * 1.35);
-                tw.data.range = Math.floor(tw.data.range * 1.08);
+                tw.data.range = Math.floor(tw.data.range * 1.1);
                 tw.core.setFillStyle(tw.data.color);
-                tw.glow.setRadius(20 + tw.lvl * 3);
+                tw.glow.setRadius(22 + tw.lvl * 4);
                 sfx.up();
                 this.showUpgrade(tw);
             }
@@ -213,32 +296,42 @@
             tryPlace(x, y) {
                 const t = TOWERS[this.selected];
                 if (this.gold < t.cost) return;
-                for (let i=0; i<PATH.length-1; i++) {
-                    if (this.distToLine(x,y,PATH[i],PATH[i+1]) < 34) return;
+
+                // Not on path
+                for (let i = 0; i < PATH.length - 1; i++) {
+                    if (this.distToLine(x, y, PATH[i], PATH[i + 1]) < 36) return;
                 }
+                // Not overlapping
                 for (const tw of this.towers) {
-                    if (Phaser.Math.Distance.Between(x,y,tw.x,tw.y) < 44) return;
+                    if (Phaser.Math.Distance.Between(x, y, tw.x, tw.y) < 48) return;
                 }
+
                 this.gold -= t.cost;
-                this.goldText.setText("GOLD " + this.gold);
+                this.goldText.setText("💰 " + this.gold);
                 sfx.place();
 
-                const base = this.add.circle(x, y, 16, 0x0f0f1c);
-                const core = this.add.circle(x, y, 10, t.color);
-                const glow = this.add.circle(x, y, 19, t.color, 0.22);
+                // Better looking tower
+                const base = this.add.circle(x, y, 18, 0x0a0a18);
+                base.setStrokeStyle(2, t.color, 0.6);
+                const core = this.add.circle(x, y, 11, t.color);
+                const glow = this.add.circle(x, y, 24, t.color, 0.25);
                 const range = this.add.circle(x, y, t.range, t.color, 0.04);
 
                 this.towers.push({
-                    x, y, data: Object.assign({}, t), lvl: 1,
-                    last: 0, core, glow, range, base
+                    x, y,
+                    data: Object.assign({}, t),
+                    lvl: 1,
+                    last: 0,
+                    core, glow, range, base
                 });
             }
 
-            distToLine(px,py,a,b) {
-                const dx=b.x-a.x, dy=b.y-a.y, len=dx*dx+dy*dy||1;
-                let t=((px-a.x)*dx+(py-a.y)*dy)/len;
-                t=Phaser.Math.Clamp(t,0,1);
-                return Phaser.Math.Distance.Between(px,py,a.x+t*dx,a.y+t*dy);
+            distToLine(px, py, a, b) {
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const len = dx * dx + dy * dy || 1;
+                let t = ((px - a.x) * dx + (py - a.y) * dy) / len;
+                t = Phaser.Math.Clamp(t, 0, 1);
+                return Phaser.Math.Distance.Between(px, py, a.x + t * dx, a.y + t * dy);
             }
 
             startWave() {
@@ -246,7 +339,7 @@
                 this.wave++;
                 this.waveText.setText("WAVE " + this.wave);
                 this.waveActive = true;
-                this.spawnLeft = 7 + this.wave * 2;
+                this.spawnLeft = 8 + this.wave * 2;
                 this.spawnTimer = 0;
                 sfx.wave();
             }
@@ -254,21 +347,28 @@
             spawn() {
                 const keys = Object.keys(ENEMIES);
                 let key = keys[0];
-                if (this.wave >= 3) key = keys[Phaser.Math.Between(0,1)];
-                if (this.wave >= 5) key = keys[Phaser.Math.Between(0,2)];
-                if (this.wave >= 7) key = keys[Phaser.Math.Between(0,4)];
-                if (this.wave >= 10) key = keys[Phaser.Math.Between(0,5)];
+                if (this.wave >= 3) key = keys[Phaser.Math.Between(0, 1)];
+                if (this.wave >= 5) key = keys[Phaser.Math.Between(0, 2)];
+                if (this.wave >= 7) key = keys[Phaser.Math.Between(0, 4)];
+                if (this.wave >= 10) key = keys[Phaser.Math.Between(0, 5)];
 
                 const d = ENEMIES[key];
-                const mult = 1 + (this.wave-1)*0.22;
+                const mult = 1 + (this.wave - 1) * 0.24;
+
                 const body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
-                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size+3, d.color, 0.25);
+                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 5, d.color, 0.3);
+                ring.setStrokeStyle(2, d.color, 0.7);
 
                 this.enemies.push({
-                    x:PATH[0].x, y:PATH[0].y,
-                    hp:d.hp*mult, max:d.hp*mult,
-                    speed:d.speed, reward:d.reward,
-                    idx:0, body, ring, slow:1, dot:0
+                    x: PATH[0].x, y: PATH[0].y,
+                    hp: d.hp * mult,
+                    max: d.hp * mult,
+                    speed: d.speed,
+                    reward: d.reward,
+                    idx: 0,
+                    body, ring,
+                    slow: 1,
+                    dot: 0
                 });
             }
 
@@ -276,49 +376,68 @@
                 if (this.paused) return;
                 delta *= this.speed;
 
+                // Spawn
                 if (this.waveActive && this.spawnLeft > 0) {
                     this.spawnTimer += delta;
-                    if (this.spawnTimer > 580) {
-                        this.spawn(); this.spawnLeft--; this.spawnTimer=0;
+                    if (this.spawnTimer > 560) {
+                        this.spawn();
+                        this.spawnLeft--;
+                        this.spawnTimer = 0;
                     }
                 }
 
-                // Enemies
-                for (let i=this.enemies.length-1; i>=0; i--) {
+                // Move enemies
+                for (let i = this.enemies.length - 1; i >= 0; i--) {
                     const e = this.enemies[i];
-                    if (e.dot > 0) { e.hp -= e.dot * delta/1000; }
-                    const next = PATH[e.idx+1];
+
+                    if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
+
+                    const next = PATH[e.idx + 1];
                     if (!next) {
-                        this.lives--; this.livesText.setText("LIVES " + this.lives);
+                        this.lives--;
+                        this.livesText.setText("❤️ " + this.lives);
                         e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i,1);
+                        this.enemies.splice(i, 1);
                         if (this.lives <= 0) this.gameOver();
                         continue;
                     }
-                    const dist = Phaser.Math.Distance.Between(e.x,e.y,next.x,next.y);
-                    if (dist < 5) e.idx++;
-                    else {
-                        const ang = Phaser.Math.Angle.Between(e.x,e.y,next.x,next.y);
+
+                    const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
+                    if (dist < 6) {
+                        e.idx++;
+                    } else {
+                        const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
                         const spd = e.speed * e.slow;
-                        e.x += Math.cos(ang)*spd*delta/1000;
-                        e.y += Math.sin(ang)*spd*delta/1000;
-                        e.body.setPosition(e.x,e.y);
-                        e.ring.setPosition(e.x,e.y);
+                        e.x += Math.cos(ang) * spd * delta / 1000;
+                        e.y += Math.sin(ang) * spd * delta / 1000;
+                        e.body.setPosition(e.x, e.y);
+                        e.ring.setPosition(e.x, e.y);
                     }
+
                     if (e.hp <= 0) {
-                        this.gold += e.reward; this.goldText.setText("GOLD " + this.gold);
+                        this.gold += e.reward;
+                        this.goldText.setText("💰 " + this.gold);
+                        // death particles
+                        this.hitParticles.setPosition(e.x, e.y);
+                        this.hitParticles.explode(12);
                         e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i,1); sfx.death();
+                        this.enemies.splice(i, 1);
+                        sfx.death();
                     }
                 }
 
-                // Towers
+                // Towers shoot
                 for (const tw of this.towers) {
                     if (time - tw.last < tw.data.rate / this.speed) continue;
-                    let target=null, best=tw.data.range;
+
+                    let target = null;
+                    let best = tw.data.range;
                     for (const e of this.enemies) {
-                        const d = Phaser.Math.Distance.Between(tw.x,tw.y,e.x,e.y);
-                        if (d < best) { best=d; target=e; }
+                        const d = Phaser.Math.Distance.Between(tw.x, tw.y, e.x, e.y);
+                        if (d < best) {
+                            best = d;
+                            target = e;
+                        }
                     }
                     if (target) {
                         this.fire(tw, target);
@@ -328,46 +447,68 @@
                 }
 
                 // Bullets
-                for (let i=this.bullets.length-1; i>=0; i--) {
+                for (let i = this.bullets.length - 1; i >= 0; i--) {
                     const b = this.bullets[i];
                     if (!b.target || !b.target.body.active) {
-                        b.gfx.destroy(); this.bullets.splice(i,1); continue;
+                        b.gfx.destroy();
+                        if (b.trail) b.trail.destroy();
+                        this.bullets.splice(i, 1);
+                        continue;
                     }
-                    const ang = Phaser.Math.Angle.Between(b.x,b.y,b.target.x,b.target.y);
-                    b.x += Math.cos(ang)*b.spd*delta/1000;
-                    b.y += Math.sin(ang)*b.spd*delta/1000;
-                    b.gfx.setPosition(b.x,b.y);
 
-                    if (Phaser.Math.Distance.Between(b.x,b.y,b.target.x,b.target.y) < 12) {
+                    const ang = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
+                    b.x += Math.cos(ang) * b.spd * delta / 1000;
+                    b.y += Math.sin(ang) * b.spd * delta / 1000;
+                    b.gfx.setPosition(b.x, b.y);
+                    if (b.trail) b.trail.setPosition(b.x, b.y);
+
+                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 14) {
                         b.target.hp -= b.dmg;
                         if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
                         if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
-                        b.gfx.destroy(); this.bullets.splice(i,1); sfx.hit();
+
+                        this.hitParticles.setPosition(b.x, b.y);
+                        this.hitParticles.explode(6);
+
+                        b.gfx.destroy();
+                        if (b.trail) b.trail.destroy();
+                        this.bullets.splice(i, 1);
+                        sfx.hit();
                     }
                 }
 
-                if (this.waveActive && this.spawnLeft<=0 && this.enemies.length===0) {
+                // Wave complete
+                if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
                     this.waveActive = false;
-                    this.gold += 30 + this.wave*10;
-                    this.goldText.setText("GOLD " + this.gold);
+                    this.gold += 35 + this.wave * 12;
+                    this.goldText.setText("💰 " + this.gold);
                 }
             }
 
             fire(tw, target) {
-                const gfx = this.add.circle(tw.x, tw.y, 4, 0xffffff);
+                // Glowing bullet + soft trail
+                const gfx = this.add.circle(tw.x, tw.y, 5, 0xffffff);
+                const trail = this.add.circle(tw.x, tw.y, 9, tw.data.color, 0.35);
+
                 this.bullets.push({
-                    x:tw.x, y:tw.y, target,
-                    dmg:tw.data.dmg, spd:480,
-                    slow:tw.data.slow || 0,
-                    dot:tw.data.dot || 0,
-                    gfx
+                    x: tw.x, y: tw.y,
+                    target,
+                    dmg: tw.data.dmg,
+                    spd: 520,
+                    slow: tw.data.slow || 0,
+                    dot: tw.data.dot || 0,
+                    gfx, trail
                 });
             }
 
             gameOver() {
-                this.add.rectangle(W/2,H/2,W,H,0x000000,0.78);
-                this.add.text(W/2,H/2-20,"GAME OVER",{fontSize:"52px",color:"#ff2d55",fontStyle:"bold"}).setOrigin(0.5);
-                this.add.text(W/2,H/2+30,"Refresh to restart",{fontSize:"16px",color:"#aaa"}).setOrigin(0.5);
+                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.8);
+                this.add.text(W/2, H/2 - 30, "GAME OVER", {
+                    fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
+                }).setOrigin(0.5);
+                this.add.text(W/2, H/2 + 30, "Refresh page to restart", {
+                    fontSize: "18px", color: "#aaaaaa"
+                }).setOrigin(0.5);
                 this.input.off("pointerdown");
                 this.startBtn.disableInteractive();
             }
@@ -378,9 +519,12 @@
             width: W,
             height: H,
             parent: "game-container",
-            backgroundColor: "#07071a",
-            scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-            scene: [Game]
+            backgroundColor: "#03030a",
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            scene: [GameScene]
         });
     </script>
 </body>
