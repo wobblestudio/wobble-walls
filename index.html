@@ -113,6 +113,7 @@
                 this.selectedTower = null;
                 this.gameStarted = false;
                 this.nextWaveText = null;
+                this.shakeTime = 0;
             }
 
             create() {
@@ -151,7 +152,7 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // Stronger glow boxes
+                // Strong glow boxes
                 const spotG = this.add.graphics();
                 FINAL_SPOTS.forEach(s => {
                     spotG.lineStyle(6, 0x00e5ff, 0.25);
@@ -264,9 +265,35 @@
                 g.fillStyle(0xffffff); g.fillCircle(4, 4, 4);
                 g.generateTexture("flare", 8, 8); g.destroy();
                 this.hitParticles = this.add.particles(0, 0, "flare", {
-                    speed: { min: 50, max: 140 }, scale: { start: 0.5, end: 0 },
-                    lifespan: 400, blendMode: "ADD", emitting: false
+                    speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 },
+                    lifespan: 450, blendMode: "ADD", emitting: false
                 });
+            }
+
+            // Floating damage text
+            showDamage(x, y, dmg, color = "#ffffff") {
+                const txt = this.add.text(x, y - 10, Math.floor(dmg), {
+                    fontSize: "18px",
+                    color: color,
+                    fontStyle: "bold",
+                    stroke: "#000000",
+                    strokeThickness: 3
+                }).setOrigin(0.5);
+
+                this.tweens.add({
+                    targets: txt,
+                    y: y - 50,
+                    alpha: 0,
+                    duration: 700,
+                    ease: "Cubic.easeOut",
+                    onComplete: () => txt.destroy()
+                });
+            }
+
+            // Screen shake
+            shake(intensity = 6, duration = 180) {
+                this.shakeTime = duration;
+                this.cameras.main.shake(duration, intensity / 1000);
             }
 
             cycleSpeed() {
@@ -352,18 +379,24 @@
                 this.goldText.setText("💰 " + this.gold);
                 sfx.place();
 
-                const base = this.add.circle(snapX, snapY, 17, 0x0a0a18);
-                base.setStrokeStyle(3, 0xffffff, 0.9);
+                // Better tower visuals
+                const base = this.add.circle(snapX, snapY, 18, 0x0a0a18);
+                base.setStrokeStyle(3, 0xffffff, 0.95);
 
                 let core;
-                if (t.shot === "laser") core = this.add.rectangle(snapX, snapY, 15, 15, t.color).setAngle(45);
-                else if (t.shot === "orb" || t.shot === "plasma") core = this.add.circle(snapX, snapY, 11, t.color);
-                else if (t.shot === "ice") core = this.add.star(snapX, snapY, 6, 5, 11, t.color);
-                else core = this.add.triangle(snapX, snapY, 0, -11, 11, 11, -11, 11, t.color);
+                if (t.shot === "laser") {
+                    core = this.add.rectangle(snapX, snapY, 16, 16, t.color).setAngle(45);
+                } else if (t.shot === "orb" || t.shot === "plasma") {
+                    core = this.add.circle(snapX, snapY, 12, t.color);
+                } else if (t.shot === "ice") {
+                    core = this.add.star(snapX, snapY, 6, 6, 12, t.color);
+                } else {
+                    core = this.add.triangle(snapX, snapY, 0, -13, 13, 13, -13, 13, t.color);
+                }
 
-                const glow = this.add.circle(snapX, snapY, 24, t.color, 0.3);
+                const glow = this.add.circle(snapX, snapY, 26, t.color, 0.35);
                 const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
-                range.setStrokeStyle(2, 0xff4444, 0.6);
+                range.setStrokeStyle(2, 0xff4444, 0.65);
 
                 this.towers.push({
                     x: snapX, y: snapY,
@@ -378,8 +411,6 @@
                 this.wave++;
                 this.waveText.setText("WAVE " + this.wave);
                 this.waveActive = true;
-
-                // Unlimited scaling
                 this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
                 this.spawnTimer = 0;
                 sfx.wave();
@@ -421,18 +452,26 @@
                 const key = keys[Phaser.Math.Between(0, maxIndex)];
                 const d = ENEMIES[key];
 
-                // Scaling difficulty
                 const hpMult = 1 + (this.wave - 1) * 0.18;
                 const speedMult = 1 + Math.min(this.wave * 0.015, 0.6);
 
+                // Better enemy visuals
                 let body;
-                if (d.shape === "square") body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.7, d.size * 1.7, d.color);
-                else if (d.shape === "diamond") body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.6, d.size * 1.6, d.color).setAngle(45);
-                else if (d.shape === "triangle") body = this.add.triangle(PATH[0].x, PATH[0].y, 0, -d.size, d.size, d.size, -d.size, d.size, d.color);
-                else body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
+                if (d.shape === "square") {
+                    body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.8, d.size * 1.8, d.color);
+                    body.setStrokeStyle(2, 0xffffff, 0.6);
+                } else if (d.shape === "diamond") {
+                    body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.7, d.size * 1.7, d.color).setAngle(45);
+                    body.setStrokeStyle(2, 0xffffff, 0.6);
+                } else if (d.shape === "triangle") {
+                    body = this.add.triangle(PATH[0].x, PATH[0].y, 0, -d.size, d.size, d.size, -d.size, d.size, d.color);
+                } else {
+                    body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
+                    body.setStrokeStyle(2, 0xffffff, 0.5);
+                }
 
-                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 7, d.color, 0.3);
-                ring.setStrokeStyle(2, 0xffffff, 0.7);
+                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 8, d.color, 0.25);
+                ring.setStrokeStyle(2, 0xffffff, 0.5);
 
                 this.enemies.push({
                     x: PATH[0].x, y: PATH[0].y,
@@ -493,7 +532,8 @@
                         this.gold += e.reward;
                         this.goldText.setText("💰 " + this.gold);
                         this.hitParticles.setPosition(e.x, e.y);
-                        this.hitParticles.explode(14);
+                        this.hitParticles.explode(16);
+                        this.shake(5, 150);
                         e.body.destroy(); e.ring.destroy();
                         this.enemies.splice(i, 1);
                         sfx.death();
@@ -537,10 +577,11 @@
 
                     if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 16) {
                         b.target.hp -= b.dmg;
+                        this.showDamage(b.target.x, b.target.y, b.dmg, "#ff6666");
                         if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
                         if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
                         this.hitParticles.setPosition(b.x, b.y);
-                        this.hitParticles.explode(8);
+                        this.hitParticles.explode(10);
                         b.gfx.destroy();
                         if (b.trail) b.trail.destroy();
                         this.bullets.splice(i, 1);
@@ -562,8 +603,10 @@
                     const line = this.add.line(0, 0, tw.x, tw.y, target.x, target.y, tw.data.color)
                         .setOrigin(0, 0).setLineWidth(5).setAlpha(0.95);
                     target.hp -= tw.data.dmg;
+                    this.showDamage(target.x, target.y, tw.data.dmg, "#ffff00");
                     this.hitParticles.setPosition(target.x, target.y);
-                    this.hitParticles.explode(12);
+                    this.hitParticles.explode(14);
+                    this.shake(4, 100);
                     this.bullets.push({ type: "laser", gfx: line, life: 140, target });
                     return;
                 }
