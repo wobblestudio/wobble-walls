@@ -19,7 +19,6 @@
         const H = 1280;
         const TILE = 56;
 
-        // Full grid
         const PLACE_SPOTS = [];
         for (let y = 170; y < 1200; y += TILE) {
             for (let x = 40; x < 680; x += TILE) {
@@ -56,7 +55,6 @@
 
         const FINAL_SPOTS = PLACE_SPOTS.filter(s => distToPath(s.x, s.y) > 42);
 
-        // More expensive = wider range + stronger
         const TOWERS = {
             archer:  { name:"ARCHER",  cost:50,  range:150, dmg:14, rate:480,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
             mage:    { name:"MAGE",    cost:90,  range:165, dmg:16, rate:700,  color:0xff2d95, upCost:70,  maxLvl:3, shot:"orb" },
@@ -156,15 +154,18 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // Placement boxes with glow effect
+                // ===== STRONGER GLOW on placement boxes =====
                 const spotG = this.add.graphics();
                 FINAL_SPOTS.forEach(s => {
-                    // Soft glow
-                    spotG.lineStyle(4, 0x00e5ff, 0.15);
-                    spotG.strokeRect(s.x - 25, s.y - 25, 50, 50);
+                    // Strong outer glow
+                    spotG.lineStyle(6, 0x00e5ff, 0.25);
+                    spotG.strokeRect(s.x - 26, s.y - 26, 52, 52);
+                    // Medium glow
+                    spotG.lineStyle(3, 0x66ffff, 0.4);
+                    spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
                     // Main white line
-                    spotG.lineStyle(2, 0xffffff, 0.9);
-                    spotG.strokeRect(s.x - 23, s.y - 23, 46, 46);
+                    spotG.lineStyle(2, 0xffffff, 0.95);
+                    spotG.strokeRect(s.x - 22, s.y - 22, 44, 44);
                 });
 
                 // Top bar
@@ -228,7 +229,7 @@
                     this.startWave();
                 });
 
-                // ===== UPGRADE + SELL PANEL =====
+                // UPGRADE + SELL PANEL
                 this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
                 const upBg = this.add.rectangle(0, 0, 360, 90, 0x0c0c20, 0.95);
                 upBg.setStrokeStyle(3, 0xffffff, 0.8);
@@ -314,6 +315,8 @@
                 tw.data.range = Math.floor(tw.data.range * 1.12);
                 tw.core.setFillStyle(tw.data.color);
                 tw.glow.setRadius(26 + tw.lvl * 4);
+                // Update range visual
+                tw.range.setRadius(tw.data.range);
                 sfx.up();
                 this.showUpgrade(tw);
             }
@@ -325,13 +328,11 @@
                 this.gold += sellValue;
                 this.goldText.setText("💰 " + this.gold);
 
-                // Remove visuals
                 tw.base.destroy();
                 tw.core.destroy();
                 tw.glow.destroy();
                 tw.range.destroy();
 
-                // Remove from array
                 const idx = this.towers.indexOf(tw);
                 if (idx > -1) this.towers.splice(idx, 1);
 
@@ -373,7 +374,10 @@
                 else core = this.add.triangle(snapX, snapY, 0, -11, 11, 11, -11, 11, t.color);
 
                 const glow = this.add.circle(snapX, snapY, 24, t.color, 0.3);
-                const range = this.add.circle(snapX, snapY, t.range, t.color, 0.05);
+
+                // ===== RED RANGE CIRCLE =====
+                const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
+                range.setStrokeStyle(2, 0xff4444, 0.6);
 
                 this.towers.push({
                     x: snapX, y: snapY,
