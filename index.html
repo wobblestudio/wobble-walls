@@ -18,51 +18,65 @@
         const W = 720;
         const H = 1280;
 
-        // Path starts BELOW the tower menu
+        // Path starts below the menu
         const PATH = [
-            {x: 360, y: 160},   // start below menu
-            {x: 360, y: 280},
-            {x: 140, y: 280},
+            {x: 360, y: 170},
+            {x: 360, y: 300},
+            {x: 140, y: 300},
             {x: 140, y: 520},
             {x: 560, y: 520},
-            {x: 560, y: 780},
-            {x: 200, y: 780},
-            {x: 200, y: 1020},
-            {x: 360, y: 1020},
-            {x: 360, y: 1300}
+            {x: 560, y: 760},
+            {x: 200, y: 760},
+            {x: 200, y: 1000},
+            {x: 360, y: 1000},
+            {x: 360, y: 1280}
         ];
 
-        // Clean placement spots surrounding the path
+        // Very careful placement spots surrounding the path
         const PLACE_SPOTS = [
-            // Top vertical (x=360) left & right
-            {x: 280, y: 200}, {x: 280, y: 260},
-            {x: 440, y: 200}, {x: 440, y: 260},
+            // ===== Top vertical segment (x=360) =====
+            // left
+            {x: 280, y: 210}, {x: 280, y: 270},
+            // right
+            {x: 440, y: 210}, {x: 440, y: 270},
 
-            // First horizontal (y=280) above & below
-            {x: 200, y: 220}, {x: 260, y: 220},
-            {x: 200, y: 340}, {x: 260, y: 340},
+            // ===== Corner + first horizontal (y=300) =====
+            // above
+            {x: 200, y: 230}, {x: 260, y: 230},
+            // below
+            {x: 200, y: 370}, {x: 260, y: 370},
 
-            // Second vertical (x=140) left & right
-            {x: 60,  y: 340}, {x: 60,  y: 420}, {x: 60,  y: 500},
-            {x: 220, y: 340}, {x: 220, y: 420}, {x: 220, y: 500},
+            // ===== Second vertical (x=140) =====
+            // left
+            {x: 60,  y: 370}, {x: 60,  y: 440}, {x: 60,  y: 510},
+            // right
+            {x: 220, y: 370}, {x: 220, y: 440}, {x: 220, y: 510},
 
-            // Second horizontal (y=520) above & below
-            {x: 220, y: 460}, {x: 300, y: 460}, {x: 380, y: 460}, {x: 460, y: 460},
-            {x: 220, y: 580}, {x: 300, y: 580}, {x: 380, y: 580}, {x: 460, y: 580},
+            // ===== Second horizontal (y=520) =====
+            // above
+            {x: 220, y: 450}, {x: 300, y: 450}, {x: 380, y: 450}, {x: 460, y: 450},
+            // below
+            {x: 220, y: 590}, {x: 300, y: 590}, {x: 380, y: 590}, {x: 460, y: 590},
 
-            // Third vertical (x=560) left & right
-            {x: 480, y: 580}, {x: 480, y: 660}, {x: 480, y: 740},
-            {x: 640, y: 580}, {x: 640, y: 660}, {x: 640, y: 740},
+            // ===== Third vertical (x=560) =====
+            // left
+            {x: 480, y: 590}, {x: 480, y: 660}, {x: 480, y: 730},
+            // right
+            {x: 640, y: 590}, {x: 640, y: 660}, {x: 640, y: 730},
 
-            // Third horizontal (y=780) above & below
-            {x: 280, y: 720}, {x: 360, y: 720}, {x: 440, y: 720},
-            {x: 280, y: 840}, {x: 360, y: 840}, {x: 440, y: 840},
+            // ===== Third horizontal (y=760) =====
+            // above
+            {x: 280, y: 690}, {x: 360, y: 690}, {x: 440, y: 690},
+            // below
+            {x: 280, y: 830}, {x: 360, y: 830}, {x: 440, y: 830},
 
-            // Fourth vertical (x=200) left & right
-            {x: 120, y: 840}, {x: 120, y: 920}, {x: 120, y: 1000},
-            {x: 280, y: 840}, {x: 280, y: 920}, {x: 280, y: 1000},
+            // ===== Fourth vertical (x=200) =====
+            // left
+            {x: 120, y: 830}, {x: 120, y: 910}, {x: 120, y: 990},
+            // right
+            {x: 280, y: 830}, {x: 280, y: 910}, {x: 280, y: 990},
 
-            // Bottom
+            // ===== Bottom =====
             {x: 280, y: 1100}, {x: 360, y: 1100}, {x: 440, y: 1100}
         ];
 
@@ -139,26 +153,26 @@
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // ===== SEPARATOR LINE between menu and map =====
+                // Separator line
                 const sep = this.add.graphics();
-                sep.lineStyle(3, 0xffffff, 0.8);
-                sep.lineBetween(20, 145, W - 20, 145);
+                sep.lineStyle(3, 0xffffff, 0.85);
+                sep.lineBetween(15, 148, W-15, 148);
 
                 // PATH
                 const pathG = this.add.graphics();
-                pathG.lineStyle(46, 0xffffff, 0.1);
+                pathG.lineStyle(44, 0xffffff, 0.1);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                pathG.lineStyle(26, 0xffffff, 0.95);
+                pathG.lineStyle(24, 0xffffff, 0.95);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                pathG.lineStyle(14, 0x0a0a18, 1);
+                pathG.lineStyle(12, 0x0a0a18, 1);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
@@ -168,7 +182,7 @@
                 const spotG = this.add.graphics();
                 PLACE_SPOTS.forEach(s => {
                     spotG.lineStyle(3, 0xffffff, 0.9);
-                    spotG.strokeRect(s.x - 26, s.y - 26, 52, 52);
+                    spotG.strokeRect(s.x - 25, s.y - 25, 50, 50);
                 });
 
                 // Top bar
@@ -206,20 +220,20 @@
                 });
 
                 // Speed & Pause
-                this.speedBtn = this.add.text(620, 200, "1X", {
+                this.speedBtn = this.add.text(620, 190, "1X", {
                     fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
                     padding: { x: 14, y: 8 }
                 }).setInteractive({ useHandCursor: true });
                 this.speedBtn.on("pointerdown", () => this.cycleSpeed());
 
-                this.pauseBtn = this.add.text(620, 260, "❚❚", {
+                this.pauseBtn = this.add.text(620, 250, "❚❚", {
                     fontSize: "18px", color: "#ffffff", backgroundColor: "#442222",
                     padding: { x: 14, y: 8 }
                 }).setInteractive({ useHandCursor: true });
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
 
                 // START button
-                this.startBtn = this.add.text(W/2, H/2 + 60, "▶  START GAME", {
+                this.startBtn = this.add.text(W/2, H/2 + 50, "▶  START GAME", {
                     fontSize: "28px",
                     color: "#ffffff",
                     backgroundColor: "#003d2e",
@@ -243,12 +257,13 @@
                 this.upBtn.on("pointerdown", () => this.upgradeSelected());
                 this.upPanel.add([upBg, this.upText, this.upBtn]);
 
+                // Input - allow placing BEFORE start
                 this.input.on("pointerdown", (p) => {
-                    if (this.paused || !this.gameStarted) return;
+                    if (this.paused) return;
                     if (p.y > 160 && p.y < H - 140) {
                         let clicked = null;
                         for (const tw of this.towers) {
-                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 34) {
+                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 32) {
                                 clicked = tw; break;
                             }
                         }
@@ -263,7 +278,7 @@
                     }
                 });
 
-                this.add.text(W/2, H/2 - 40, "WOBBLE WALLS", {
+                this.add.text(W/2, H/2 - 50, "WOBBLE WALLS", {
                     fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
                 }).setOrigin(0.5).setAlpha(0.35);
 
@@ -321,7 +336,7 @@
                 let valid = false;
                 let snapX = x, snapY = y;
                 for (const s of PLACE_SPOTS) {
-                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 34) {
+                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 32) {
                         valid = true;
                         snapX = s.x; snapY = s.y;
                         break;
@@ -330,7 +345,7 @@
                 if (!valid) return;
 
                 for (const tw of this.towers) {
-                    if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 20) return;
+                    if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 18) return;
                 }
 
                 this.gold -= t.cost;
