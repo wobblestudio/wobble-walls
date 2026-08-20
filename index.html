@@ -18,18 +18,35 @@
         const W = 720;
         const H = 1280;
 
-        // Wider path
         const PATH = [
             {x:360, y:-80},
-            {x:360, y:220},
-            {x:130, y:220},
-            {x:130, y:500},
-            {x:580, y:500},
-            {x:580, y:780},
-            {x:180, y:780},
-            {x:180, y:1020},
-            {x:360, y:1020},
+            {x:360, y:240},
+            {x:140, y:240},
+            {x:140, y:520},
+            {x:560, y:520},
+            {x:560, y:800},
+            {x:200, y:800},
+            {x:200, y:1040},
+            {x:360, y:1040},
             {x:360, y:1360}
+        ];
+
+        // Clean placement spots (only beside the path)
+        const PLACE_SPOTS = [
+            // left of top vertical
+            {x:280, y:160}, {x:280, y:240}, {x:280, y:320},
+            // left of first horizontal
+            {x:60, y:320}, {x:60, y:400}, {x:60, y:480},
+            {x:220, y:400}, {x:220, y:480},
+            // right of second horizontal
+            {x:480, y:440}, {x:480, y:520}, {x:480, y:600},
+            {x:640, y:440}, {x:640, y:520}, {x:640, y:600},
+            // left of third vertical section
+            {x:100, y:720}, {x:100, y:800}, {x:100, y:880},
+            {x:280, y:720}, {x:280, y:800}, {x:280, y:880},
+            // bottom area
+            {x:280, y:960}, {x:280, y:1120},
+            {x:440, y:960}, {x:440, y:1120}
         ];
 
         const TOWERS = {
@@ -87,7 +104,8 @@
                 this.paused = false;
                 this.speed = 1;
                 this.selectedTower = null;
-                this.autoWaveTimer = 0;
+                this.gameStarted = false;
+                this.nextWaveText = null;
             }
 
             create() {
@@ -98,99 +116,75 @@
                 // Background
                 this.add.rectangle(W/2, H/2, W, H, 0x050510);
 
-                // Subtle grid (background only)
+                // Subtle grid
                 const bgGrid = this.add.graphics();
                 bgGrid.lineStyle(1, 0x00e5ff, 0.04);
                 for (let x = 0; x <= W; x += 40) { bgGrid.moveTo(x, 0); bgGrid.lineTo(x, H); }
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // ===== PATH (wider + white thick) =====
+                // PATH (white thick)
                 const pathG = this.add.graphics();
-                // Outer glow
-                pathG.lineStyle(48, 0xffffff, 0.08);
+                pathG.lineStyle(46, 0xffffff, 0.1);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // Main white thick path
-                pathG.lineStyle(28, 0xffffff, 0.9);
+                pathG.lineStyle(26, 0xffffff, 0.95);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // Inner dark lane so enemies look centered
-                pathG.lineStyle(16, 0x0a0a18, 1);
+                pathG.lineStyle(14, 0x0a0a18, 1);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // ===== PLACEMENT SQUARES (only beside path, white thick) =====
-                this.placeSpots = [];
-                const spots = [
-                    // left side of first vertical
-                    {x:280, y:140}, {x:280, y:220}, {x:280, y:300},
-                    // around horizontal sections
-                    {x:200, y:300}, {x:200, y:380}, {x:200, y:460},
-                    {x:60,  y:300}, {x:60,  y:380}, {x:60,  y:460},
-                    {x:480, y:420}, {x:480, y:500}, {x:480, y:580},
-                    {x:640, y:420}, {x:640, y:500}, {x:640, y:580},
-                    {x:280, y:700}, {x:280, y:780}, {x:280, y:860},
-                    {x:100, y:700}, {x:100, y:780}, {x:100, y:860},
-                    {x:440, y:940}, {x:440, y:1020}, {x:280, y:1100}
-                ];
-
+                // CLEAN placement squares
                 const spotG = this.add.graphics();
-                spots.forEach(s => {
-                    spotG.lineStyle(3, 0xffffff, 0.85);
-                    spotG.strokeRect(s.x - 32, s.y - 32, 64, 64);
-                    this.placeSpots.push(s);
+                PLACE_SPOTS.forEach(s => {
+                    spotG.lineStyle(3, 0xffffff, 0.9);
+                    spotG.strokeRect(s.x - 30, s.y - 30, 60, 60);
                 });
 
-                // ===== TOP UI =====
+                // Top bar
                 this.add.rectangle(W/2, 36, W, 72, 0x08081a, 0.95);
-                this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.7);
+                this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.75);
 
                 this.goldText  = this.add.text(20, 14, "💰 250", { fontSize: "20px", color: "#ffd700", fontStyle: "bold" });
                 this.livesText = this.add.text(150, 14, "❤️ 25", { fontSize: "20px", color: "#ff4d6d", fontStyle: "bold" });
                 this.waveText  = this.add.text(280, 14, "WAVE 0", { fontSize: "20px", color: "#00e5ff", fontStyle: "bold" });
 
-                // ===== TOWER MENU (big + white thick boxes + spacing) =====
+                // Tower buttons
                 const keys = Object.keys(TOWERS);
                 keys.forEach((key, i) => {
                     const t = TOWERS[key];
                     const bx = 60 + i * 110;
                     const by = 110;
 
-                    // White thick box
                     const box = this.add.rectangle(bx, by, 100, 52, 0x0a0a18);
                     box.setStrokeStyle(3, 0xffffff, 0.9);
 
                     const btn = this.add.text(bx, by, t.name + "\n" + t.cost, {
-                        fontSize: "15px",
-                        color: "#ffffff",
-                        align: "center",
-                        fontStyle: "bold"
+                        fontSize: "15px", color: "#ffffff", align: "center", fontStyle: "bold"
                     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
                     btn.on("pointerdown", () => {
                         this.selected = key;
                         this.selectedTower = null;
                         this.upPanel.setVisible(false);
-                        // reset all boxes
                         this.children.list.forEach(c => {
                             if (c.type === "Rectangle" && c.height === 52) c.setStrokeStyle(3, 0xffffff, 0.9);
                         });
                         box.setStrokeStyle(4, 0x00e5ff, 1);
                     });
-
                     if (key === "archer") box.setStrokeStyle(4, 0x00e5ff, 1);
                 });
 
-                // ===== SPEED & PAUSE (inside map, empty area) =====
+                // Speed & Pause (inside map)
                 this.speedBtn = this.add.text(620, 200, "1X", {
                     fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
                     padding: { x: 14, y: 8 }
@@ -202,6 +196,20 @@
                     padding: { x: 14, y: 8 }
                 }).setInteractive({ useHandCursor: true });
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
+
+                // START button (only at beginning)
+                this.startBtn = this.add.text(W/2, H/2 + 80, "▶  START GAME", {
+                    fontSize: "28px",
+                    color: "#ffffff",
+                    backgroundColor: "#003d2e",
+                    padding: { x: 30, y: 16 }
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+                this.startBtn.on("pointerdown", () => {
+                    this.startBtn.destroy();
+                    this.gameStarted = true;
+                    this.startWave();
+                });
 
                 // Upgrade panel
                 this.upPanel = this.add.container(W/2, H - 100).setVisible(false);
@@ -216,7 +224,7 @@
 
                 // Input
                 this.input.on("pointerdown", (p) => {
-                    if (this.paused) return;
+                    if (this.paused || !this.gameStarted) return;
                     if (p.y > 150 && p.y < H - 140) {
                         let clicked = null;
                         for (const tw of this.towers) {
@@ -235,9 +243,9 @@
                     }
                 });
 
-                this.add.text(W/2, H/2, "WOBBLE WALLS", {
+                this.add.text(W/2, H/2 - 40, "WOBBLE WALLS", {
                     fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
-                }).setOrigin(0.5).setAlpha(0.035);
+                }).setOrigin(0.5).setAlpha(0.4);
 
                 // Particles
                 const g = this.make.graphics({ x: 0, y: 0, add: false });
@@ -291,11 +299,10 @@
                 const t = TOWERS[this.selected];
                 if (this.gold < t.cost) return;
 
-                // Must be near a placement spot
                 let valid = false;
                 let snapX = x, snapY = y;
-                for (const s of this.placeSpots) {
-                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 40) {
+                for (const s of PLACE_SPOTS) {
+                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 38) {
                         valid = true;
                         snapX = s.x; snapY = s.y;
                         break;
@@ -303,7 +310,6 @@
                 }
                 if (!valid) return;
 
-                // Check occupied
                 for (const tw of this.towers) {
                     if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 20) return;
                 }
@@ -342,6 +348,30 @@
                 sfx.wave();
             }
 
+            showNextWaveText() {
+                if (this.nextWaveText) this.nextWaveText.destroy();
+                this.nextWaveText = this.add.text(W/2, H/2, "NEXT WAVE", {
+                    fontSize: "42px",
+                    color: "#00ff9d",
+                    fontStyle: "bold",
+                    stroke: "#003322",
+                    strokeThickness: 6
+                }).setOrigin(0.5).setAlpha(1);
+
+                this.tweens.add({
+                    targets: this.nextWaveText,
+                    alpha: 0,
+                    duration: 1200,
+                    ease: "Power2",
+                    onComplete: () => {
+                        if (this.nextWaveText) {
+                            this.nextWaveText.destroy();
+                            this.nextWaveText = null;
+                        }
+                    }
+                });
+            }
+
             spawn() {
                 const keys = Object.keys(ENEMIES);
                 let key = keys[0];
@@ -371,16 +401,15 @@
             }
 
             update(time, delta) {
-                if (this.paused) return;
+                if (this.paused || !this.gameStarted) return;
                 delta *= this.speed;
 
-                // Auto start next wave after short delay
-                if (!this.waveActive && this.enemies.length === 0) {
-                    this.autoWaveTimer += delta;
-                    if (this.autoWaveTimer > 1800) {
-                        this.autoWaveTimer = 0;
-                        this.startWave();
-                    }
+                // Auto next wave after finish
+                if (!this.waveActive && this.enemies.length === 0 && this.wave > 0) {
+                    this.showNextWaveText();
+                    this.time.delayedCall(1400, () => {
+                        if (!this.waveActive) this.startWave();
+                    });
                 }
 
                 if (this.waveActive && this.spawnLeft > 0) {
@@ -392,7 +421,7 @@
                     }
                 }
 
-                // Enemies movement (centered on path)
+                // Enemies
                 for (let i = this.enemies.length - 1; i >= 0; i--) {
                     const e = this.enemies[i];
                     if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
