@@ -65,12 +65,12 @@
         };
 
         const ENEMIES = {
-            goblin: { hp:60,  speed:80,  reward:10, color:0x39ff14, size:14, shape:"circle" },
-            runner: { hp:36,  speed:155, reward:8,  color:0x00ffcc, size:11, shape:"diamond" },
-            orc:    { hp:170, speed:46,  reward:24, color:0xff3355, size:18, shape:"square" },
-            bat:    { hp:48,  speed:125, reward:14, color:0xb14eff, size:13, shape:"triangle" },
-            drone:  { hp:115, speed:66,  reward:18, color:0xffaa00, size:16, shape:"hex" },
-            golem:  { hp:320, speed:34,  reward:42, color:0x8888ff, size:24, shape:"square" }
+            goblin: { hp:55,  speed:78,  reward:9,  color:0x39ff14, size:13, shape:"circle" },
+            runner: { hp:32,  speed:150, reward:7,  color:0x00ffcc, size:10, shape:"diamond" },
+            orc:    { hp:160, speed:45,  reward:22, color:0xff3355, size:17, shape:"square" },
+            bat:    { hp:45,  speed:120, reward:12, color:0xb14eff, size:12, shape:"triangle" },
+            drone:  { hp:110, speed:65,  reward:16, color:0xffaa00, size:15, shape:"hex" },
+            golem:  { hp:300, speed:33,  reward:40, color:0x8888ff, size:22, shape:"square" }
         };
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -122,19 +122,16 @@
 
                 this.add.rectangle(W/2, H/2, W, H, 0x050510);
 
-                // Subtle grid
                 const bgGrid = this.add.graphics();
                 bgGrid.lineStyle(1, 0x00e5ff, 0.04);
                 for (let x = 0; x <= W; x += 40) { bgGrid.moveTo(x, 0); bgGrid.lineTo(x, H); }
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // Separator
                 const sep = this.add.graphics();
                 sep.lineStyle(3, 0xffffff, 0.85);
                 sep.lineBetween(15, 148, W-15, 148);
 
-                // PATH
                 const pathG = this.add.graphics();
                 pathG.lineStyle(40, 0xffffff, 0.1);
                 pathG.beginPath();
@@ -154,21 +151,17 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // ===== STRONGER GLOW on placement boxes =====
+                // Stronger glow boxes
                 const spotG = this.add.graphics();
                 FINAL_SPOTS.forEach(s => {
-                    // Strong outer glow
                     spotG.lineStyle(6, 0x00e5ff, 0.25);
                     spotG.strokeRect(s.x - 26, s.y - 26, 52, 52);
-                    // Medium glow
                     spotG.lineStyle(3, 0x66ffff, 0.4);
                     spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
-                    // Main white line
                     spotG.lineStyle(2, 0xffffff, 0.95);
                     spotG.strokeRect(s.x - 22, s.y - 22, 44, 44);
                 });
 
-                // Top bar
                 this.add.rectangle(W/2, 36, W, 72, 0x08081a, 0.95);
                 this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.75);
 
@@ -176,7 +169,6 @@
                 this.livesText = this.add.text(150, 14, "❤️ 25", { fontSize: "20px", color: "#ff4d6d", fontStyle: "bold" });
                 this.waveText  = this.add.text(280, 14, "WAVE 0", { fontSize: "20px", color: "#00e5ff", fontStyle: "bold" });
 
-                // Tower buttons
                 const keys = Object.keys(TOWERS);
                 keys.forEach((key, i) => {
                     const t = TOWERS[key];
@@ -202,7 +194,6 @@
                     if (key === "archer") box.setStrokeStyle(4, 0x00e5ff, 1);
                 });
 
-                // Speed & Pause
                 this.speedBtn = this.add.text(620, 190, "1X", {
                     fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
                     padding: { x: 14, y: 8 }
@@ -215,7 +206,6 @@
                 }).setInteractive({ useHandCursor: true });
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
 
-                // START
                 this.startBtn = this.add.text(W/2, H/2 + 20, "▶  START GAME", {
                     fontSize: "28px",
                     color: "#ffffff",
@@ -229,7 +219,6 @@
                     this.startWave();
                 });
 
-                // UPGRADE + SELL PANEL
                 this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
                 const upBg = this.add.rectangle(0, 0, 360, 90, 0x0c0c20, 0.95);
                 upBg.setStrokeStyle(3, 0xffffff, 0.8);
@@ -315,7 +304,6 @@
                 tw.data.range = Math.floor(tw.data.range * 1.12);
                 tw.core.setFillStyle(tw.data.color);
                 tw.glow.setRadius(26 + tw.lvl * 4);
-                // Update range visual
                 tw.range.setRadius(tw.data.range);
                 sfx.up();
                 this.showUpgrade(tw);
@@ -374,8 +362,6 @@
                 else core = this.add.triangle(snapX, snapY, 0, -11, 11, 11, -11, 11, t.color);
 
                 const glow = this.add.circle(snapX, snapY, 24, t.color, 0.3);
-
-                // ===== RED RANGE CIRCLE =====
                 const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
                 range.setStrokeStyle(2, 0xff4444, 0.6);
 
@@ -392,7 +378,9 @@
                 this.wave++;
                 this.waveText.setText("WAVE " + this.wave);
                 this.waveActive = true;
-                this.spawnLeft = 8 + this.wave * 2;
+
+                // Unlimited scaling
+                this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
                 this.spawnTimer = 0;
                 sfx.wave();
             }
@@ -423,14 +411,19 @@
 
             spawn() {
                 const keys = Object.keys(ENEMIES);
-                let key = keys[0];
-                if (this.wave >= 3) key = keys[Phaser.Math.Between(0, 1)];
-                if (this.wave >= 5) key = keys[Phaser.Math.Between(0, 2)];
-                if (this.wave >= 7) key = keys[Phaser.Math.Between(0, 4)];
-                if (this.wave >= 10) key = keys[Phaser.Math.Between(0, 5)];
+                let maxIndex = 0;
+                if (this.wave >= 3) maxIndex = 1;
+                if (this.wave >= 5) maxIndex = 2;
+                if (this.wave >= 8) maxIndex = 3;
+                if (this.wave >= 12) maxIndex = 4;
+                if (this.wave >= 18) maxIndex = 5;
 
+                const key = keys[Phaser.Math.Between(0, maxIndex)];
                 const d = ENEMIES[key];
-                const mult = 1 + (this.wave - 1) * 0.25;
+
+                // Scaling difficulty
+                const hpMult = 1 + (this.wave - 1) * 0.18;
+                const speedMult = 1 + Math.min(this.wave * 0.015, 0.6);
 
                 let body;
                 if (d.shape === "square") body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.7, d.size * 1.7, d.color);
@@ -443,8 +436,10 @@
 
                 this.enemies.push({
                     x: PATH[0].x, y: PATH[0].y,
-                    hp: d.hp * mult, max: d.hp * mult,
-                    speed: d.speed, reward: d.reward,
+                    hp: d.hp * hpMult,
+                    max: d.hp * hpMult,
+                    speed: d.speed * speedMult,
+                    reward: Math.floor(d.reward * (1 + this.wave * 0.05)),
                     idx: 0, body, ring, slow: 1, dot: 0
                 });
             }
@@ -462,7 +457,7 @@
 
                 if (this.waveActive && this.spawnLeft > 0) {
                     this.spawnTimer += delta;
-                    if (this.spawnTimer > 520) {
+                    if (this.spawnTimer > Math.max(280, 520 - this.wave * 8)) {
                         this.spawn();
                         this.spawnLeft--;
                         this.spawnTimer = 0;
@@ -555,7 +550,7 @@
 
                 if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
                     this.waveActive = false;
-                    this.gold += 45 + this.wave * 12;
+                    this.gold += 40 + this.wave * 10;
                     this.goldText.setText("💰 " + this.gold);
                 }
             }
