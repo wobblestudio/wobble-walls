@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Wobble Walls</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #050510;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <script>
+        // ============================================
+        // WOBBLE WALLS
+        // Cyber-Fantasy Neon Tower Defense
+        // Advanced MVP - Phaser 3
+        // ============================================
+
+        const GAME_WIDTH = 960;
+        const GAME_HEIGHT = 640;
+
+        // Path points (enemy movement)
+        const PATH = [
+            { x: -40, y: 320 },
+            { x: 220, y: 320 },
+            { x: 220, y: 140 },
+            { x: 480, y: 140 },
+            { x: 480, y: 480 },
+            { x: 720, y: 480 },
+            { x: 720, y: 280 },
+            { x: 1000, y: 280 }
+        ];
+
+        // Tower definitions
+        const TOWER_TYPES = {
+            archer: {
+                name: "Neon Archer",
+                cost: 50,
+                range: 160,
+                damage: 12,
+                fireRate: 600,
+                color: 0x00f0ff,
+                bulletSpeed: 420
+            },
+            mage: {
+                name: "Arcane Mage",
+                cost: 80,
+                range: 130,
+                damage: 8,
+                fireRate: 900,
+                color: 0xff00aa,
+                bulletSpeed: 280,
+                aoe: true
+            },
+            tesla: {
+                name: "Tesla Coil",
+                cost: 120,
+                range: 150,
+                damage: 18,
+                fireRate: 1100,
+                color: 0xffee00,
+                bulletSpeed: 500,
+                chain: true
+            }
+        };
+
+        // Enemy definitions
+        const ENEMY_TYPES = {
+            goblin: { hp: 40, speed: 70, reward: 8, color: 0x44ff44, size: 10 },
+            runner: { hp: 25, speed: 130, reward: 6, color: 0x00ffcc, size: 8 },
+            orc: { hp: 120, speed: 45, reward: 16, color: 0xff4444, size: 18 },
+            bat: { hp: 35, speed: 100, reward: 9, color: 0xaa66ff, size: 12 },
+            drone: { hp: 80, speed: 60, reward: 14, color: 0xffaa00, size: 15 }
+        };
+
+        class BootScene extends Phaser.Scene {
+            constructor() {
+                super("BootScene");
+            }
+
+            create() {
+                this.scene.start("GameScene");
+            }
+        }
+
+        class GameScene extends Phaser.Scene {
+            constructor() {
+                super("GameScene");
+            }
+
+            init() {
+                this.gold = 200;
+                this.lives = 20;
+                this.wave = 0;
+                this.enemies = [];
+                this.towers = [];
+                this.bullets = [];
+                this.selectedTowerType = "archer";
+                this.isWaveActive = false;
+                this.spawnTimer = 0;
+                this.enemiesToSpawn = 0;
+                this.pathGraphics = null;
+            }
+
+            create() {
+                // Background
+                this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0a1a);
+
+                // Draw path
+                this.pathGraphics = this.add.graphics();
+                this.pathGraphics.lineStyle(28, 0x1a1a3a, 1);
+                this.pathGraphics.beginPath();
+                this.pathGraphics.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) {
+                    this.pathGraphics.lineTo(PATH[i].x, PATH[i].y);
+                }
+                this.pathGraphics.strokePath();
+
+                this.pathGraphics.lineStyle(4, 0x00f0ff, 0.35);
+                this.pathGraphics.beginPath();
+                this.pathGraphics.moveTo(PATH[0].x, PATH[0].y);
+                for (let i = 1; i < PATH.length; i++) {
+                    this.pathGraphics.lineTo(PATH[i].x, PATH[i].y);
+                }
+                this.pathGraphics.strokePath();
+
+                // UI Panel
+                this.add.rectangle(GAME_WIDTH / 2, 30, GAME_WIDTH, 60, 0x111122, 0.9);
+
+                this.goldText = this.add.text(20, 18, "Gold: 200", {
+                    fontSize: "20px",
+                    color: "#ffd700"
+                });
+
+                this.livesText = this.add.text(180, 18, "Lives: 20", {
+                    fontSize: "20px",
+                    color: "#ff5555"
+                });
+
+                this.waveText = this.add.text(340, 18, "Wave: 0", {
+                    fontSize: "20px",
+                    color: "#00f0ff"
+                });
+
+                // Tower buttons
+                this.createTowerButton(620, 30, "archer", "Archer\n50G");
+                this.createTowerButton(730, 30, "mage", "Mage\n80G");
+                this.createTowerButton(840, 30, "tesla", "Tesla\n120G");
+
+                // Start wave button
+                this.startBtn = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 30, "[ START WAVE ]", {
+                    fontSize: "22px",
+                    color: "#00ff88",
+                    backgroundColor: "#003322",
+                    padding: { x: 16, y: 8 }
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+                this.startBtn.on("pointerdown", () => this.startWave());
+
+                // Placement
+                this.input.on("pointerdown", (pointer) => {
+                    if (pointer.y > 70 && pointer.y < GAME_HEIGHT - 60) {
+                        this.placeTower(pointer.x, pointer.y);
+                    }
+                });
+
+                // Title
+                this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, "WOBBLE WALLS", {
+                    fontSize: "42px",
+                    color: "#00f0ff",
+                    stroke: "#ff00aa",
+                    strokeThickness: 3
+                }).setOrigin(0.5).setAlpha(0.15);
+            }
+
+            createTowerButton(x, y, type, label) {
+                const btn = this.add.text(x, y, label, {
+                    fontSize: "13px",
+                    color: "#ffffff",
+                    backgroundColor: "#222244",
+                    padding: { x: 10, y: 6 },
+                    align: "center"
+                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+                btn.on("pointerdown", () => {
+                    this.selectedTowerType = type;
+                    this.children.list.forEach(child => {
+                        if (child.type === "Text" && child.text.includes("G")) {
+                            child.setBackgroundColor("#222244");
+                        }
+                    });
+                    btn.setBackgroundColor("#004466");
+                });
+
+                if (type === "archer") btn.setBackgroundColor("#004466");
+            }
+
+            placeTower(x, y) {
+                const type = TOWER_TYPES[this.selectedTowerType];
+                if (this.gold < type.cost) return;
+
+                // Simple placement check (not on path)
+                for (let i = 0; i < PATH.length - 1; i++) {
+                    const dist = this.distanceToSegment(x, y, PATH[i], PATH[i + 1]);
+                    if (dist < 40) return;
+                }
+
+                // Check overlapping towers
+                for (const t of this.towers) {
+                    if (Phaser.Math.Distance.Between(x, y, t.x, t.y) < 50) return;
+                }
+
+                this.gold -= type.cost;
+                this.goldText.setText("Gold: " + this.gold);
+
+                const tower = {
+                    x: x,
+                    y: y,
+                    type: this.selectedTowerType,
+                    data: type,
+                    lastShot: 0,
+                    graphics: this.add.circle(x, y, 16, type.color),
+                    rangeCircle: this.add.circle(x, y, type.range, type.color, 0.08)
+                };
+
+                this.towers.push(tower);
+            }
+
+            distanceToSegment(px, py, a, b) {
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const lengthSq = dx * dx + dy * dy;
+                let t = ((px - a.x) * dx + (py - a.y) * dy) / lengthSq;
+                t = Math.max(0, Math.min(1, t));
+                const projX = a.x + t * dx;
+                const projY = a.y + t * dy;
+                return Phaser.Math.Distance.Between(px, py, projX, projY);
+            }
+
+            startWave() {
+                if (this.isWaveActive) return;
+
+                this.wave++;
+                this.waveText.setText("Wave: " + this.wave);
+                this.isWaveActive = true;
+
+                // Scaling difficulty
+                this.enemiesToSpawn = 6 + this.wave * 2;
+                this.spawnTimer = 0;
+            }
+
+            spawnEnemy() {
+                const types = Object.keys(ENEMY_TYPES);
+                let typeKey = types[0];
+
+                if (this.wave >= 3) typeKey = types[Phaser.Math.Between(0, 1)];
+                if (this.wave >= 5) typeKey = types[Phaser.Math.Between(0, 2)];
+                if (this.wave >= 8) typeKey = types[Phaser.Math.Between(0, 4)];
+
+                const data = ENEMY_TYPES[typeKey];
+                const hpMultiplier = 1 + (this.wave - 1) * 0.25;
+
+                const enemy = {
+                    x: PATH[0].x,
+                    y: PATH[0].y,
+                    hp: data.hp * hpMultiplier,
+                    maxHp: data.hp * hpMultiplier,
+                    speed: data.speed,
+                    reward: data.reward,
+                    pathIndex: 0,
+                    graphics: this.add.circle(PATH[0].x, PATH[0].y, data.size, data.color)
+                };
+
+                this.enemies.push(enemy);
+            }
+
+            update(time, delta) {
+                // Spawn logic
+                if (this.isWaveActive && this.enemiesToSpawn > 0) {
+                    this.spawnTimer += delta;
+                    if (this.spawnTimer > 700) {
+                        this.spawnEnemy();
+                        this.enemiesToSpawn--;
+                        this.spawnTimer = 0;
+                    }
+                }
+
+                // Move enemies
+                for (let i = this.enemies.length - 1; i >= 0; i--) {
+                    const e = this.enemies[i];
+                    const target = PATH[e.pathIndex + 1];
+
+                    if (!target) {
+                        // Reached end
+                        this.lives--;
+                        this.livesText.setText("Lives: " + this.lives);
+                        e.graphics.destroy();
+                        this.enemies.splice(i, 1);
+
+                        if (this.lives <= 0) {
+                            this.gameOver();
+                        }
+                        continue;
+                    }
+
+                    const dist = Phaser.Math.Distance.Between(e.x, e.y, target.x, target.y);
+                    if (dist < 4) {
+                        e.pathIndex++;
+                    } else {
+                        const angle = Phaser.Math.Angle.Between(e.x, e.y, target.x, target.y);
+                        e.x += Math.cos(angle) * e.speed * (delta / 1000);
+                        e.y += Math.sin(angle) * e.speed * (delta / 1000);
+                        e.graphics.setPosition(e.x, e.y);
+                    }
+                }
+
+                // Towers shooting
+                for (const tower of this.towers) {
+                    if (time - tower.lastShot < tower.data.fireRate) continue;
+
+                    let target = null;
+                    let closest = tower.data.range;
+
+                    for (const e of this.enemies) {
+                        const d = Phaser.Math.Distance.Between(tower.x, tower.y, e.x, e.y);
+                        if (d < closest) {
+                            closest = d;
+                            target = e;
+                        }
+                    }
+
+                    if (target) {
+                        this.shoot(tower, target);
+                        tower.lastShot = time;
+                    }
+                }
+
+                // Move bullets
+                for (let i = this.bullets.length - 1; i >= 0; i--) {
+                    const b = this.bullets[i];
+                    if (!b.target || !b.target.graphics.active) {
+                        b.graphics.destroy();
+                        this.bullets.splice(i, 1);
+                        continue;
+                    }
+
+                    const angle = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
+                    b.x += Math.cos(angle) * b.speed * (delta / 1000);
+                    b.y += Math.sin(angle) * b.speed * (delta / 1000);
+                    b.graphics.setPosition(b.x, b.y);
+
+                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 12) {
+                        b.target.hp -= b.damage;
+                        b.graphics.destroy();
+                        this.bullets.splice(i, 1);
+
+                        if (b.target.hp <= 0) {
+                            this.gold += b.target.reward;
+                            this.goldText.setText("Gold: " + this.gold);
+                            b.target.graphics.destroy();
+                            const idx = this.enemies.indexOf(b.target);
+                            if (idx > -1) this.enemies.splice(idx, 1);
+                        }
+                    }
+                }
+
+                // Check wave complete
+                if (this.isWaveActive && this.enemiesToSpawn <= 0 && this.enemies.length === 0) {
+                    this.isWaveActive = false;
+                    this.gold += 25 + this.wave * 5;
+                    this.goldText.setText("Gold: " + this.gold);
+                }
+            }
+
+            shoot(tower, target) {
+                const bullet = {
+                    x: tower.x,
+                    y: tower.y,
+                    target: target,
+                    damage: tower.data.damage,
+                    speed: tower.data.bulletSpeed,
+                    graphics: this.add.circle(tower.x, tower.y, 5, 0xffffff)
+                };
+                this.bullets.push(bullet);
+            }
+
+            gameOver() {
+                this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.75);
+                this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, "GAME OVER", {
+                    fontSize: "64px",
+                    color: "#ff0044"
+                }).setOrigin(0.5);
+
+                this.input.off("pointerdown");
+                this.startBtn.disableInteractive();
+            }
+        }
+
+        const config = {
+            type: Phaser.AUTO,
+            width: GAME_WIDTH,
+            height: GAME_HEIGHT,
+            parent: "game-container",
+            backgroundColor: "#0a0a1a",
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            scene: [BootScene, GameScene]
+        };
+
+        new Phaser.Game(config);
+    </script>
+</body>
+</html>
