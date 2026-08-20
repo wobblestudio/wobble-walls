@@ -17,30 +17,47 @@
     <script>
         const W = 720;
         const H = 1280;
+        const TILE = 56;
 
-        // ===== SOLID FRAME OF PLACEMENT BOXES =====
-        // Outer border of boxes
+        // Full grid of placeable tiles
         const PLACE_SPOTS = [];
+        for (let y = 170; y < 1200; y += TILE) {
+            for (let x = 40; x < 680; x += TILE) {
+                PLACE_SPOTS.push({x: x + TILE/2, y: y + TILE/2});
+            }
+        }
 
-        // Top row
-        for (let x = 80; x <= 640; x += 60) PLACE_SPOTS.push({x: x, y: 190});
-        // Bottom row
-        for (let x = 80; x <= 640; x += 60) PLACE_SPOTS.push({x: x, y: 1180});
-        // Left column
-        for (let y = 250; y <= 1120; y += 60) PLACE_SPOTS.push({x: 80, y: y});
-        // Right column
-        for (let y = 250; y <= 1120; y += 60) PLACE_SPOTS.push({x: 640, y: y});
-
-        // Inner path (in the middle of the frame)
+        // Enemy path (we will remove tiles that are on the path)
         const PATH = [
-            {x: 200, y: 260},
-            {x: 200, y: 500},
-            {x: 520, y: 500},
-            {x: 520, y: 780},
+            {x: 360, y: 170},
+            {x: 360, y: 340},
+            {x: 160, y: 340},
+            {x: 160, y: 560},
+            {x: 560, y: 560},
+            {x: 560, y: 780},
             {x: 200, y: 780},
-            {x: 200, y: 1060},
-            {x: 520, y: 1060}
+            {x: 200, y: 1000},
+            {x: 360, y: 1000},
+            {x: 360, y: 1220}
         ];
+
+        // Remove tiles that are too close to the path
+        function distToPath(px, py) {
+            let min = 9999;
+            for (let i = 0; i < PATH.length - 1; i++) {
+                const a = PATH[i], b = PATH[i+1];
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const len = dx*dx + dy*dy || 1;
+                let t = ((px - a.x)*dx + (py - a.y)*dy) / len;
+                t = Math.max(0, Math.min(1, t));
+                const dist = Math.hypot(px - (a.x + t*dx), py - (a.y + t*dy));
+                if (dist < min) min = dist;
+            }
+            return min;
+        }
+
+        // Filter: keep only tiles far enough from path
+        const FINAL_SPOTS = PLACE_SPOTS.filter(s => distToPath(s.x, s.y) > 42);
 
         const TOWERS = {
             archer:  { name:"ARCHER",  cost:50,  range:165, dmg:16, rate:460,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
@@ -115,12 +132,12 @@
                 for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
                 bgGrid.strokePath();
 
-                // Separator line
+                // Separator
                 const sep = this.add.graphics();
                 sep.lineStyle(3, 0xffffff, 0.85);
                 sep.lineBetween(15, 148, W-15, 148);
 
-                // PATH (in the middle)
+                // PATH
                 const pathG = this.add.graphics();
                 pathG.lineStyle(40, 0xffffff, 0.1);
                 pathG.beginPath();
@@ -140,10 +157,10 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // SOLID FRAME of placement boxes
+                // Full grid of placement boxes (path removed)
                 const spotG = this.add.graphics();
-                PLACE_SPOTS.forEach(s => {
-                    spotG.lineStyle(2.5, 0xffffff, 0.9);
+                FINAL_SPOTS.forEach(s => {
+                    spotG.lineStyle(2, 0xffffff, 0.85);
                     spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
                 });
 
@@ -296,7 +313,7 @@
 
                 let valid = false;
                 let snapX = x, snapY = y;
-                for (const s of PLACE_SPOTS) {
+                for (const s of FINAL_SPOTS) {
                     if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 28) {
                         valid = true;
                         snapX = s.x; snapY = s.y;
