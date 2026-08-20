@@ -18,71 +18,55 @@
         const W = 720;
         const H = 1280;
 
+        // Simple clean path
         const PATH = [
-            {x: 360, y: 170},
-            {x: 360, y: 300},
-            {x: 140, y: 300},
-            {x: 140, y: 520},
-            {x: 560, y: 520},
-            {x: 560, y: 760},
-            {x: 200, y: 760},
-            {x: 200, y: 1000},
-            {x: 360, y: 1000},
-            {x: 360, y: 1280}
+            {x: 180, y: 180},
+            {x: 180, y: 420},
+            {x: 520, y: 420},
+            {x: 520, y: 700},
+            {x: 180, y: 700},
+            {x: 180, y: 980},
+            {x: 520, y: 980},
+            {x: 520, y: 1200}
         ];
 
-        const PLACE_SPOTS = [];
-        const SIZE = 50;
+        // Clean continuous placement boxes around the simple path
+        const PLACE_SPOTS = [
+            // Left of first vertical
+            {x:100,y:220},{x:100,y:280},{x:100,y:340},{x:100,y:400},
+            // Right of first vertical
+            {x:260,y:220},{x:260,y:280},{x:260,y:340},{x:260,y:400},
 
-        function addLine(x1, y1, x2, y2, side) {
-            const dx = x2 - x1;
-            const dy = y2 - y1;
-            const len = Math.sqrt(dx*dx + dy*dy) || 1;
-            const steps = Math.max(1, Math.floor(len / SIZE));
-            for (let i = 0; i <= steps; i++) {
-                const t = i / steps;
-                let px = x1 + dx * t;
-                let py = y1 + dy * t;
+            // Above first horizontal
+            {x:220,y:350},{x:280,y:350},{x:340,y:350},{x:400,y:350},{x:460,y:350},
+            // Below first horizontal
+            {x:220,y:490},{x:280,y:490},{x:340,y:490},{x:400,y:490},{x:460,y:490},
 
-                // Larger offset so boxes stay clear of the path
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    // horizontal → offset up / down
-                    py += side * 68;
-                } else {
-                    // vertical → offset left / right
-                    px += side * 68;
-                }
-                PLACE_SPOTS.push({x: Math.round(px), y: Math.round(py)});
-            }
-        }
+            // Left of second vertical
+            {x:440,y:490},{x:440,y:550},{x:440,y:610},{x:440,y:670},
+            // Right of second vertical
+            {x:600,y:490},{x:600,y:550},{x:600,y:610},{x:600,y:670},
 
-        // Build continuous border with bigger gap
-        addLine(360, 180, 360, 300, -1);
-        addLine(360, 180, 360, 300,  1);
+            // Above second horizontal
+            {x:220,y:630},{x:280,y:630},{x:340,y:630},{x:400,y:630},{x:460,y:630},
+            // Below second horizontal
+            {x:220,y:770},{x:280,y:770},{x:340,y:770},{x:400,y:770},{x:460,y:770},
 
-        addLine(360, 300, 140, 300, -1);
-        addLine(360, 300, 140, 300,  1);
+            // Left of third vertical
+            {x:100,y:770},{x:100,y:830},{x:100,y:890},{x:100,y:950},
+            // Right of third vertical
+            {x:260,y:770},{x:260,y:830},{x:260,y:890},{x:260,y:950},
 
-        addLine(140, 300, 140, 520, -1);
-        addLine(140, 300, 140, 520,  1);
+            // Above last horizontal
+            {x:220,y:910},{x:280,y:910},{x:340,y:910},{x:400,y:910},{x:460,y:910},
+            // Below last horizontal
+            {x:220,y:1050},{x:280,y:1050},{x:340,y:1050},{x:400,y:1050},{x:460,y:1050},
 
-        addLine(140, 520, 560, 520, -1);
-        addLine(140, 520, 560, 520,  1);
-
-        addLine(560, 520, 560, 760, -1);
-        addLine(560, 520, 560, 760,  1);
-
-        addLine(560, 760, 200, 760, -1);
-        addLine(560, 760, 200, 760,  1);
-
-        addLine(200, 760, 200, 1000, -1);
-        addLine(200, 760, 200, 1000,  1);
-
-        addLine(200, 1000, 360, 1000, -1);
-        addLine(200, 1000, 360, 1000,  1);
-
-        addLine(360, 1000, 360, 1200, -1);
-        addLine(360, 1000, 360, 1200,  1);
+            // Left of last vertical
+            {x:440,y:1050},{x:440,y:1110},{x:440,y:1170},
+            // Right of last vertical
+            {x:600,y:1050},{x:600,y:1110},{x:600,y:1170}
+        ];
 
         const TOWERS = {
             archer:  { name:"ARCHER",  cost:50,  range:165, dmg:16, rate:460,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
@@ -163,13 +147,13 @@
 
                 // PATH
                 const pathG = this.add.graphics();
-                pathG.lineStyle(44, 0xffffff, 0.1);
+                pathG.lineStyle(40, 0xffffff, 0.1);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                pathG.lineStyle(24, 0xffffff, 0.95);
+                pathG.lineStyle(22, 0xffffff, 0.95);
                 pathG.beginPath();
                 pathG.moveTo(PATH[0].x, PATH[0].y);
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
@@ -181,11 +165,11 @@
                 for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                 pathG.strokePath();
 
-                // Placement squares (now further from path)
+                // Clean placement squares
                 const spotG = this.add.graphics();
                 PLACE_SPOTS.forEach(s => {
                     spotG.lineStyle(2.5, 0xffffff, 0.9);
-                    spotG.strokeRect(s.x - 23, s.y - 23, 46, 46);
+                    spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
                 });
 
                 // Top bar
@@ -236,7 +220,7 @@
                 this.pauseBtn.on("pointerdown", () => this.togglePause());
 
                 // START
-                this.startBtn = this.add.text(W/2, H/2 + 40, "▶  START GAME", {
+                this.startBtn = this.add.text(W/2, H/2 + 30, "▶  START GAME", {
                     fontSize: "28px",
                     color: "#ffffff",
                     backgroundColor: "#003d2e",
@@ -280,7 +264,7 @@
                     }
                 });
 
-                this.add.text(W/2, H/2 - 60, "WOBBLE WALLS", {
+                this.add.text(W/2, H/2 - 70, "WOBBLE WALLS", {
                     fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
                 }).setOrigin(0.5).setAlpha(0.3);
 
