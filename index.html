@@ -55,7 +55,6 @@
 
         const FINAL_SPOTS = PLACE_SPOTS.filter(s => distToPath(s.x, s.y) > 42);
 
-        // 10 Towers
         const TOWERS = {
             archer:   { name:"ARCHER",   cost:50,  mana:0,  range:150, dmg:14, rate:480,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
             mage:     { name:"MAGE",     cost:90,  mana:10, range:165, dmg:16, rate:700,  color:0xff2d95, upCost:70,  maxLvl:3, shot:"orb" },
@@ -63,7 +62,6 @@
             cryo:     { name:"CRYO",     cost:110, mana:12, range:170, dmg:12, rate:640,  color:0x66ccff, upCost:80,  maxLvl:3, shot:"ice", slow:0.5 },
             toxic:    { name:"TOXIC",    cost:120, mana:10, range:160, dmg:10, rate:550,  color:0x39ff14, upCost:85,  maxLvl:3, shot:"dot", dot:7 },
             plasma:   { name:"PLASMA",   cost:180, mana:20, range:200, dmg:45, rate:1050, color:0xff6600, upCost:130, maxLvl:3, shot:"plasma" },
-            // New towers
             beacon:   { name:"BEACON",   cost:160, mana:25, range:140, dmg:0,  rate:9999, color:0xff99ff, upCost:110, maxLvl:3, shot:"buff" },
             drone:    { name:"DRONE",    cost:130, mana:15, range:190, dmg:22, rate:620,  color:0x00ffaa, upCost:95,  maxLvl:3, shot:"bullet" },
             totem:    { name:"TOTEM",    cost:150, mana:18, range:175, dmg:18, rate:750,  color:0xaa66ff, upCost:105, maxLvl:3, shot:"orb" },
@@ -176,7 +174,6 @@
                 this.livesText = this.add.text(220, 10, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
                 this.waveText  = this.add.text(320, 10, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
 
-                // Tower buttons (2 rows)
                 const keys = Object.keys(TOWERS);
                 keys.forEach((key, i) => {
                     const t = TOWERS[key];
@@ -195,6 +192,7 @@
                     btn.on("pointerdown", () => {
                         this.selected = key;
                         this.selectedTower = null;
+                        this.hideAllRanges();
                         this.upPanel.setVisible(false);
                         this.children.list.forEach(c => {
                             if (c.type === "Rectangle" && (c.height === 42 || c.height === 48)) c.setStrokeStyle(2, 0xffffff, 0.9);
@@ -257,9 +255,12 @@
                         }
                         if (clicked) {
                             this.selectedTower = clicked;
+                            this.hideAllRanges();
+                            clicked.range.setVisible(true); // only show selected
                             this.showUpgrade(clicked);
                         } else {
                             this.selectedTower = null;
+                            this.hideAllRanges();
                             this.upPanel.setVisible(false);
                             this.tryPlace(p.x, p.y);
                         }
@@ -276,6 +277,12 @@
                 this.hitParticles = this.add.particles(0, 0, "flare", {
                     speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 },
                     lifespan: 450, blendMode: "ADD", emitting: false
+                });
+            }
+
+            hideAllRanges() {
+                this.towers.forEach(tw => {
+                    if (tw.range) tw.range.setVisible(false);
                 });
             }
 
@@ -394,8 +401,11 @@
                 else core = this.add.triangle(snapX, snapY, 0, -13, 13, 13, -13, 13, t.color);
 
                 const glow = this.add.circle(snapX, snapY, 26, t.color, 0.35);
+
+                // Range is created but HIDDEN by default
                 const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
                 range.setStrokeStyle(2, 0xff4444, 0.65);
+                range.setVisible(false);
 
                 this.towers.push({
                     x: snapX, y: snapY,
@@ -541,7 +551,7 @@
 
                 for (const tw of this.towers) {
                     if (time - tw.last < tw.data.rate / this.speed) continue;
-                    if (tw.data.shot === "buff") continue; // support tower later
+                    if (tw.data.shot === "buff") continue;
 
                     let target = null, best = tw.data.range;
                     for (const e of this.enemies) {
@@ -596,7 +606,6 @@
                     this.mana += 15 + this.wave * 2;
                     this.goldText.setText("💰 " + this.gold);
                     this.manaText.setText("🔵 " + this.mana);
-                    // Screen shake only at end of wave
                     this.cameras.main.shake(220, 0.008);
                 }
             }
