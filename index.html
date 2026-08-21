@@ -7,53 +7,105 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { background: #03030a; width: 100%; height: 100%; overflow: hidden; }
+        html, body { background: #03030a; width: 100%; height: 100%; overflow: hidden; font-family: Arial, sans-serif; }
         #game-container { width: 100%; height: 100%; }
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(3,3,10,0.95); z-index: 100; color: white;
+        }
+        #ui-overlay.hidden { display: none; }
+        .title { font-size: 42px; color: #00e5ff; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 20px #00e5ff; }
+        .subtitle { font-size: 16px; color: #aaa; margin-bottom: 30px; }
+        input {
+            padding: 14px 20px; font-size: 18px; border: 2px solid #00e5ff; border-radius: 8px;
+            background: #0a0a18; color: white; width: 260px; text-align: center; outline: none;
+        }
+        button {
+            margin-top: 20px; padding: 14px 40px; font-size: 18px; font-weight: bold;
+            background: #003d2e; color: white; border: 2px solid #00ff9d; border-radius: 8px; cursor: pointer;
+        }
+        button:hover { background: #005c44; }
+        .map-btn {
+            margin: 10px; padding: 16px 30px; font-size: 16px; background: #0a0a18;
+            border: 2px solid #00e5ff; color: #00e5ff; border-radius: 8px; cursor: pointer; width: 220px;
+        }
+        .map-btn:hover { background: #003344; }
+        .highscore { margin-top: 25px; font-size: 15px; color: #ffd700; }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
+
+    <!-- Username Screen -->
+    <div id="ui-overlay">
+        <div class="title">WOBBLE WALLS</div>
+        <div class="subtitle">Enter your username</div>
+        <input type="text" id="usernameInput" placeholder="Your name" maxlength="12" autocomplete="off">
+        <button id="startBtn">CONTINUE</button>
+        <div class="highscore" id="highscoreText"></div>
+    </div>
 
     <script>
         const W = 720;
         const H = 1280;
         const TILE = 56;
 
-        const PLACE_SPOTS = [];
-        for (let y = 170; y < 1200; y += TILE) {
-            for (let x = 40; x < 680; x += TILE) {
-                PLACE_SPOTS.push({x: x + TILE/2, y: y + TILE/2});
+        // ===== 3 DIFFERENT MAPS =====
+        const MAPS = {
+            map1: {
+                name: "Neon Valley",
+                path: [
+                    {x:360,y:170},{x:360,y:340},{x:160,y:340},{x:160,y:560},
+                    {x:560,y:560},{x:560,y:780},{x:200,y:780},{x:200,y:1000},
+                    {x:360,y:1000},{x:360,y:1220}
+                ]
+            },
+            map2: {
+                name: "Cyber Spiral",
+                path: [
+                    {x:200,y:180},{x:520,y:180},{x:520,y:400},{x:200,y:400},
+                    {x:200,y:620},{x:520,y:620},{x:520,y:840},{x:200,y:840},
+                    {x:200,y:1060},{x:360,y:1060},{x:360,y:1220}
+                ]
+            },
+            map3: {
+                name: "Void Corridor",
+                path: [
+                    {x:360,y:170},{x:360,y:300},{x:180,y:300},{x:180,y:500},
+                    {x:540,y:500},{x:540,y:700},{x:180,y:700},{x:180,y:900},
+                    {x:540,y:900},{x:540,y:1100},{x:360,y:1100},{x:360,y:1220}
+                ]
             }
-        }
+        };
 
-        const PATH = [
-            {x: 360, y: 170},
-            {x: 360, y: 340},
-            {x: 160, y: 340},
-            {x: 160, y: 560},
-            {x: 560, y: 560},
-            {x: 560, y: 780},
-            {x: 200, y: 780},
-            {x: 200, y: 1000},
-            {x: 360, y: 1000},
-            {x: 360, y: 1220}
-        ];
+        let currentMap = "map1";
+        let PATH = MAPS.map1.path;
+        let FINAL_SPOTS = [];
 
-        function distToPath(px, py) {
-            let min = 9999;
-            for (let i = 0; i < PATH.length - 1; i++) {
-                const a = PATH[i], b = PATH[i+1];
-                const dx = b.x - a.x, dy = b.y - a.y;
-                const len = dx*dx + dy*dy || 1;
-                let t = ((px - a.x)*dx + (py - a.y)*dy) / len;
-                t = Math.max(0, Math.min(1, t));
-                const dist = Math.hypot(px - (a.x + t*dx), py - (a.y + t*dy));
-                if (dist < min) min = dist;
+        function rebuildSpots() {
+            const spots = [];
+            for (let y = 170; y < 1200; y += TILE) {
+                for (let x = 40; x < 680; x += TILE) {
+                    spots.push({x: x + TILE/2, y: y + TILE/2});
+                }
             }
-            return min;
+            function distToPath(px, py) {
+                let min = 9999;
+                for (let i = 0; i < PATH.length - 1; i++) {
+                    const a = PATH[i], b = PATH[i+1];
+                    const dx = b.x - a.x, dy = b.y - a.y;
+                    const len = dx*dx + dy*dy || 1;
+                    let t = ((px - a.x)*dx + (py - a.y)*dy) / len;
+                    t = Math.max(0, Math.min(1, t));
+                    const dist = Math.hypot(px - (a.x + t*dx), py - (a.y + t*dy));
+                    if (dist < min) min = dist;
+                }
+                return min;
+            }
+            FINAL_SPOTS = spots.filter(s => distToPath(s.x, s.y) > 42);
         }
-
-        const FINAL_SPOTS = PLACE_SPOTS.filter(s => distToPath(s.x, s.y) > 42);
+        rebuildSpots();
 
         const TOWERS = {
             archer:   { name:"ARCHER",   cost:50,  mana:0,  range:150, dmg:14, rate:480,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet" },
@@ -98,574 +150,621 @@
             sell:  () => tone(300, 0.12, "triangle", 0.08)
         };
 
-        class GameScene extends Phaser.Scene {
-            constructor() { super("Game"); }
+        // ===== SAVE / LOAD =====
+        function saveProgress(data) {
+            localStorage.setItem("wobblewalls_save", JSON.stringify(data));
+        }
+        function loadProgress() {
+            try {
+                return JSON.parse(localStorage.getItem("wobblewalls_save")) || null;
+            } catch(e) { return null; }
+        }
 
-            init() {
-                this.gold = 300;
-                this.mana = 50;
-                this.lives = 25;
-                this.wave = 0;
-                this.enemies = [];
-                this.towers = [];
-                this.bullets = [];
-                this.selected = "archer";
-                this.waveActive = false;
-                this.spawnLeft = 0;
-                this.spawnTimer = 0;
-                this.paused = false;
-                this.speed = 1;
-                this.selectedTower = null;
-                this.gameStarted = false;
-                this.nextWaveText = null;
+        // ===== UI OVERLAY LOGIC =====
+        const overlay = document.getElementById("ui-overlay");
+        const usernameInput = document.getElementById("usernameInput");
+        const startBtn = document.getElementById("startBtn");
+        const highscoreText = document.getElementById("highscoreText");
+
+        let playerName = "";
+        let highWave = 0;
+
+        const saved = loadProgress();
+        if (saved) {
+            playerName = saved.username || "";
+            highWave = saved.highWave || 0;
+            usernameInput.value = playerName;
+            highscoreText.innerText = `Best Wave: ${highWave}`;
+        }
+
+        startBtn.onclick = () => {
+            const name = usernameInput.value.trim();
+            if (!name) {
+                usernameInput.style.borderColor = "#ff4444";
+                return;
             }
+            playerName = name;
+            // Show map selection
+            overlay.innerHTML = `
+                <div class="title">SELECT MAP</div>
+                <div class="subtitle">Welcome, ${playerName}</div>
+                <button class="map-btn" data-map="map1">1. Neon Valley</button>
+                <button class="map-btn" data-map="map2">2. Cyber Spiral</button>
+                <button class="map-btn" data-map="map3">3. Void Corridor</button>
+                <div class="highscore">Best Wave: ${highWave}</div>
+            `;
+            document.querySelectorAll(".map-btn").forEach(btn => {
+                btn.onclick = () => {
+                    currentMap = btn.dataset.map;
+                    PATH = MAPS[currentMap].path;
+                    rebuildSpots();
+                    overlay.classList.add("hidden");
+                    // Start Phaser
+                    startGame();
+                };
+            });
+        };
 
-            create() {
-                this.input.once("pointerdown", () => {
-                    if (audioCtx.state === "suspended") audioCtx.resume();
-                });
+        // ===== GAME =====
+        function startGame() {
+            class GameScene extends Phaser.Scene {
+                constructor() { super("Game"); }
 
-                this.add.rectangle(W/2, H/2, W, H, 0x050510);
+                init() {
+                    this.gold = 300;
+                    this.mana = 50;
+                    this.lives = 25;
+                    this.wave = 0;
+                    this.enemies = [];
+                    this.towers = [];
+                    this.bullets = [];
+                    this.selected = "archer";
+                    this.waveActive = false;
+                    this.spawnLeft = 0;
+                    this.spawnTimer = 0;
+                    this.paused = false;
+                    this.speed = 1;
+                    this.selectedTower = null;
+                    this.gameStarted = false;
+                    this.nextWaveText = null;
+                }
 
-                const bgGrid = this.add.graphics();
-                bgGrid.lineStyle(1, 0x00e5ff, 0.04);
-                for (let x = 0; x <= W; x += 40) { bgGrid.moveTo(x, 0); bgGrid.lineTo(x, H); }
-                for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
-                bgGrid.strokePath();
-
-                const sep = this.add.graphics();
-                sep.lineStyle(3, 0xffffff, 0.85);
-                sep.lineBetween(15, 148, W-15, 148);
-
-                const pathG = this.add.graphics();
-                pathG.lineStyle(40, 0xffffff, 0.1);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
-
-                pathG.lineStyle(22, 0xffffff, 0.95);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
-
-                pathG.lineStyle(12, 0x0a0a18, 1);
-                pathG.beginPath();
-                pathG.moveTo(PATH[0].x, PATH[0].y);
-                for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
-                pathG.strokePath();
-
-                const spotG = this.add.graphics();
-                FINAL_SPOTS.forEach(s => {
-                    spotG.lineStyle(6, 0x00e5ff, 0.25);
-                    spotG.strokeRect(s.x - 26, s.y - 26, 52, 52);
-                    spotG.lineStyle(3, 0x66ffff, 0.4);
-                    spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
-                    spotG.lineStyle(2, 0xffffff, 0.95);
-                    spotG.strokeRect(s.x - 22, s.y - 22, 44, 44);
-                });
-
-                this.add.rectangle(W/2, 36, W, 72, 0x08081a, 0.95);
-                this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.75);
-
-                this.goldText  = this.add.text(16, 10, "💰 300", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
-                this.manaText  = this.add.text(120, 10, "🔵 50", { fontSize: "18px", color: "#66ccff", fontStyle: "bold" });
-                this.livesText = this.add.text(220, 10, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
-                this.waveText  = this.add.text(320, 10, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
-
-                const keys = Object.keys(TOWERS);
-                keys.forEach((key, i) => {
-                    const t = TOWERS[key];
-                    const row = i < 5 ? 0 : 1;
-                    const col = i % 5;
-                    const bx = 70 + col * 120;
-                    const by = 100 + row * 48;
-
-                    const box = this.add.rectangle(bx, by, 110, 42, 0x0a0a18);
-                    box.setStrokeStyle(2, 0xffffff, 0.9);
-
-                    const btn = this.add.text(bx, by, t.name + "\n" + t.cost + (t.mana > 0 ? " +" + t.mana : ""), {
-                        fontSize: "12px", color: "#ffffff", align: "center", fontStyle: "bold"
-                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-                    btn.on("pointerdown", () => {
-                        this.selected = key;
-                        this.selectedTower = null;
-                        this.hideAllRanges();
-                        this.upPanel.setVisible(false);
-                        this.children.list.forEach(c => {
-                            if (c.type === "Rectangle" && (c.height === 42 || c.height === 48)) c.setStrokeStyle(2, 0xffffff, 0.9);
-                        });
-                        box.setStrokeStyle(3, 0x00e5ff, 1);
+                create() {
+                    this.input.once("pointerdown", () => {
+                        if (audioCtx.state === "suspended") audioCtx.resume();
                     });
-                    if (key === "archer") box.setStrokeStyle(3, 0x00e5ff, 1);
-                });
 
-                this.speedBtn = this.add.text(620, 210, "1X", {
-                    fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
-                    padding: { x: 14, y: 8 }
-                }).setInteractive({ useHandCursor: true });
-                this.speedBtn.on("pointerdown", () => this.cycleSpeed());
+                    this.add.rectangle(W/2, H/2, W, H, 0x050510);
 
-                this.pauseBtn = this.add.text(620, 270, "❚❚", {
-                    fontSize: "18px", color: "#ffffff", backgroundColor: "#442222",
-                    padding: { x: 14, y: 8 }
-                }).setInteractive({ useHandCursor: true });
-                this.pauseBtn.on("pointerdown", () => this.togglePause());
+                    const bgGrid = this.add.graphics();
+                    bgGrid.lineStyle(1, 0x00e5ff, 0.04);
+                    for (let x = 0; x <= W; x += 40) { bgGrid.moveTo(x, 0); bgGrid.lineTo(x, H); }
+                    for (let y = 0; y <= H; y += 40) { bgGrid.moveTo(0, y); bgGrid.lineTo(W, y); }
+                    bgGrid.strokePath();
 
-                this.startBtn = this.add.text(W/2, H/2 + 20, "▶  START GAME", {
-                    fontSize: "28px",
-                    color: "#ffffff",
-                    backgroundColor: "#003d2e",
-                    padding: { x: 30, y: 16 }
-                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                    const sep = this.add.graphics();
+                    sep.lineStyle(3, 0xffffff, 0.85);
+                    sep.lineBetween(15, 148, W-15, 148);
 
-                this.startBtn.on("pointerdown", () => {
-                    this.startBtn.destroy();
-                    this.gameStarted = true;
-                    this.startWave();
-                });
+                    // PATH
+                    const pathG = this.add.graphics();
+                    pathG.lineStyle(40, 0xffffff, 0.1);
+                    pathG.beginPath();
+                    pathG.moveTo(PATH[0].x, PATH[0].y);
+                    for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                    pathG.strokePath();
 
-                this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
-                const upBg = this.add.rectangle(0, 0, 360, 90, 0x0c0c20, 0.95);
-                upBg.setStrokeStyle(3, 0xffffff, 0.8);
-                this.upText = this.add.text(0, -22, "", { fontSize: "15px", color: "#fff", align: "center" }).setOrigin(0.5);
+                    pathG.lineStyle(22, 0xffffff, 0.95);
+                    pathG.beginPath();
+                    pathG.moveTo(PATH[0].x, PATH[0].y);
+                    for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                    pathG.strokePath();
 
-                this.upBtn = this.add.text(-80, 22, "UPGRADE", {
-                    fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322", padding: { x: 14, y: 7 }
-                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-                this.upBtn.on("pointerdown", () => this.upgradeSelected());
+                    pathG.lineStyle(12, 0x0a0a18, 1);
+                    pathG.beginPath();
+                    pathG.moveTo(PATH[0].x, PATH[0].y);
+                    for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
+                    pathG.strokePath();
 
-                this.sellBtn = this.add.text(80, 22, "SELL", {
-                    fontSize: "15px", color: "#ff6b6b", backgroundColor: "#3a1111", padding: { x: 20, y: 7 }
-                }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-                this.sellBtn.on("pointerdown", () => this.sellSelected());
+                    // Spots
+                    const spotG = this.add.graphics();
+                    FINAL_SPOTS.forEach(s => {
+                        spotG.lineStyle(6, 0x00e5ff, 0.25);
+                        spotG.strokeRect(s.x - 26, s.y - 26, 52, 52);
+                        spotG.lineStyle(3, 0x66ffff, 0.4);
+                        spotG.strokeRect(s.x - 24, s.y - 24, 48, 48);
+                        spotG.lineStyle(2, 0xffffff, 0.95);
+                        spotG.strokeRect(s.x - 22, s.y - 22, 44, 44);
+                    });
 
-                this.upPanel.add([upBg, this.upText, this.upBtn, this.sellBtn]);
+                    this.add.rectangle(W/2, 36, W, 72, 0x08081a, 0.95);
+                    this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.75);
 
-                this.input.on("pointerdown", (p) => {
-                    if (this.paused) return;
-                    if (p.y > 200 && p.y < H - 150) {
-                        let clicked = null;
-                        for (const tw of this.towers) {
-                            if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 30) {
-                                clicked = tw; break;
-                            }
-                        }
-                        if (clicked) {
-                            this.selectedTower = clicked;
-                            this.hideAllRanges();
-                            clicked.range.setVisible(true); // only show selected
-                            this.showUpgrade(clicked);
-                        } else {
+                    this.goldText  = this.add.text(16, 10, "💰 300", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
+                    this.manaText  = this.add.text(120, 10, "🔵 50", { fontSize: "18px", color: "#66ccff", fontStyle: "bold" });
+                    this.livesText = this.add.text(220, 10, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
+                    this.waveText  = this.add.text(320, 10, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
+                    this.nameText  = this.add.text(480, 10, playerName, { fontSize: "16px", color: "#ffffff" });
+
+                    // Tower buttons
+                    const keys = Object.keys(TOWERS);
+                    keys.forEach((key, i) => {
+                        const t = TOWERS[key];
+                        const row = i < 5 ? 0 : 1;
+                        const col = i % 5;
+                        const bx = 70 + col * 120;
+                        const by = 100 + row * 48;
+
+                        const box = this.add.rectangle(bx, by, 110, 42, 0x0a0a18);
+                        box.setStrokeStyle(2, 0xffffff, 0.9);
+
+                        const btn = this.add.text(bx, by, t.name + "\n" + t.cost + (t.mana > 0 ? " +" + t.mana : ""), {
+                            fontSize: "12px", color: "#ffffff", align: "center", fontStyle: "bold"
+                        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+                        btn.on("pointerdown", () => {
+                            this.selected = key;
                             this.selectedTower = null;
                             this.hideAllRanges();
                             this.upPanel.setVisible(false);
-                            this.tryPlace(p.x, p.y);
+                            this.children.list.forEach(c => {
+                                if (c.type === "Rectangle" && (c.height === 42 || c.height === 48)) c.setStrokeStyle(2, 0xffffff, 0.9);
+                            });
+                            box.setStrokeStyle(3, 0x00e5ff, 1);
+                        });
+                        if (key === "archer") box.setStrokeStyle(3, 0x00e5ff, 1);
+                    });
+
+                    this.speedBtn = this.add.text(620, 210, "1X", {
+                        fontSize: "18px", color: "#ffffff", backgroundColor: "#222244",
+                        padding: { x: 14, y: 8 }
+                    }).setInteractive({ useHandCursor: true });
+                    this.speedBtn.on("pointerdown", () => this.cycleSpeed());
+
+                    this.pauseBtn = this.add.text(620, 270, "❚❚", {
+                        fontSize: "18px", color: "#ffffff", backgroundColor: "#442222",
+                        padding: { x: 14, y: 8 }
+                    }).setInteractive({ useHandCursor: true });
+                    this.pauseBtn.on("pointerdown", () => this.togglePause());
+
+                    this.startBtn = this.add.text(W/2, H/2 + 20, "▶  START GAME", {
+                        fontSize: "28px",
+                        color: "#ffffff",
+                        backgroundColor: "#003d2e",
+                        padding: { x: 30, y: 16 }
+                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+                    this.startBtn.on("pointerdown", () => {
+                        this.startBtn.destroy();
+                        this.gameStarted = true;
+                        this.startWave();
+                    });
+
+                    this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
+                    const upBg = this.add.rectangle(0, 0, 360, 90, 0x0c0c20, 0.95);
+                    upBg.setStrokeStyle(3, 0xffffff, 0.8);
+                    this.upText = this.add.text(0, -22, "", { fontSize: "15px", color: "#fff", align: "center" }).setOrigin(0.5);
+
+                    this.upBtn = this.add.text(-80, 22, "UPGRADE", {
+                        fontSize: "15px", color: "#00ff9d", backgroundColor: "#003322", padding: { x: 14, y: 7 }
+                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                    this.upBtn.on("pointerdown", () => this.upgradeSelected());
+
+                    this.sellBtn = this.add.text(80, 22, "SELL", {
+                        fontSize: "15px", color: "#ff6b6b", backgroundColor: "#3a1111", padding: { x: 20, y: 7 }
+                    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+                    this.sellBtn.on("pointerdown", () => this.sellSelected());
+
+                    this.upPanel.add([upBg, this.upText, this.upBtn, this.sellBtn]);
+
+                    this.input.on("pointerdown", (p) => {
+                        if (this.paused) return;
+                        if (p.y > 200 && p.y < H - 150) {
+                            let clicked = null;
+                            for (const tw of this.towers) {
+                                if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 30) {
+                                    clicked = tw; break;
+                                }
+                            }
+                            if (clicked) {
+                                this.selectedTower = clicked;
+                                this.hideAllRanges();
+                                clicked.range.setVisible(true);
+                                this.showUpgrade(clicked);
+                            } else {
+                                this.selectedTower = null;
+                                this.hideAllRanges();
+                                this.upPanel.setVisible(false);
+                                this.tryPlace(p.x, p.y);
+                            }
                         }
-                    }
-                });
+                    });
 
-                this.add.text(W/2, H/2 - 80, "WOBBLE WALLS", {
-                    fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
-                }).setOrigin(0.5).setAlpha(0.3);
+                    this.add.text(W/2, H/2 - 80, "WOBBLE WALLS", {
+                        fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
+                    }).setOrigin(0.5).setAlpha(0.3);
 
-                const g = this.make.graphics({ x: 0, y: 0, add: false });
-                g.fillStyle(0xffffff); g.fillCircle(4, 4, 4);
-                g.generateTexture("flare", 8, 8); g.destroy();
-                this.hitParticles = this.add.particles(0, 0, "flare", {
-                    speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 },
-                    lifespan: 450, blendMode: "ADD", emitting: false
-                });
-            }
-
-            hideAllRanges() {
-                this.towers.forEach(tw => {
-                    if (tw.range) tw.range.setVisible(false);
-                });
-            }
-
-            showDamage(x, y, dmg, color = "#ffffff") {
-                const txt = this.add.text(x, y - 10, Math.floor(dmg), {
-                    fontSize: "18px",
-                    color: color,
-                    fontStyle: "bold",
-                    stroke: "#000000",
-                    strokeThickness: 3
-                }).setOrigin(0.5);
-
-                this.tweens.add({
-                    targets: txt,
-                    y: y - 50,
-                    alpha: 0,
-                    duration: 700,
-                    ease: "Cubic.easeOut",
-                    onComplete: () => txt.destroy()
-                });
-            }
-
-            cycleSpeed() {
-                this.speed = this.speed === 1 ? 2 : this.speed === 2 ? 3 : 1;
-                this.speedBtn.setText(this.speed + "X");
-            }
-
-            togglePause() {
-                this.paused = !this.paused;
-                this.pauseBtn.setText(this.paused ? "▶" : "❚❚");
-                this.pauseBtn.setBackgroundColor(this.paused ? "#225522" : "#442222");
-            }
-
-            showUpgrade(tw) {
-                const sellValue = Math.floor(tw.data.cost * 0.6 + (tw.lvl - 1) * tw.data.upCost * 0.5);
-                if (tw.lvl >= tw.data.maxLvl) {
-                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  MAX\nSell: ${sellValue}`);
-                    this.upBtn.setVisible(false);
-                } else {
-                    const next = Math.floor(tw.data.dmg * 1.35);
-                    this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}\nDMG \( {tw.data.dmg}→ \){next}  Cost ${tw.data.upCost}\nSell: ${sellValue}`);
-                    this.upBtn.setVisible(true);
-                }
-                this.upPanel.setVisible(true);
-            }
-
-            upgradeSelected() {
-                const tw = this.selectedTower;
-                if (!tw || tw.lvl >= tw.data.maxLvl) return;
-                if (this.gold < tw.data.upCost) return;
-                this.gold -= tw.data.upCost;
-                this.goldText.setText("💰 " + this.gold);
-                tw.lvl++;
-                tw.data.dmg = Math.floor(tw.data.dmg * 1.35);
-                tw.data.range = Math.floor(tw.data.range * 1.12);
-                tw.core.setFillStyle(tw.data.color);
-                tw.glow.setRadius(26 + tw.lvl * 4);
-                tw.range.setRadius(tw.data.range);
-                sfx.up();
-                this.showUpgrade(tw);
-            }
-
-            sellSelected() {
-                const tw = this.selectedTower;
-                if (!tw) return;
-                const sellValue = Math.floor(tw.data.cost * 0.6 + (tw.lvl - 1) * tw.data.upCost * 0.5);
-                this.gold += sellValue;
-                this.goldText.setText("💰 " + this.gold);
-
-                tw.base.destroy();
-                tw.core.destroy();
-                tw.glow.destroy();
-                tw.range.destroy();
-
-                const idx = this.towers.indexOf(tw);
-                if (idx > -1) this.towers.splice(idx, 1);
-
-                this.selectedTower = null;
-                this.upPanel.setVisible(false);
-                sfx.sell();
-            }
-
-            tryPlace(x, y) {
-                const t = TOWERS[this.selected];
-                if (this.gold < t.cost || this.mana < t.mana) return;
-
-                let valid = false;
-                let snapX = x, snapY = y;
-                for (const s of FINAL_SPOTS) {
-                    if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 28) {
-                        valid = true;
-                        snapX = s.x; snapY = s.y;
-                        break;
-                    }
-                }
-                if (!valid) return;
-
-                for (const tw of this.towers) {
-                    if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 18) return;
-                }
-
-                this.gold -= t.cost;
-                this.mana -= t.mana;
-                this.goldText.setText("💰 " + this.gold);
-                this.manaText.setText("🔵 " + this.mana);
-                sfx.place();
-
-                const base = this.add.circle(snapX, snapY, 18, 0x0a0a18);
-                base.setStrokeStyle(3, 0xffffff, 0.95);
-
-                let core;
-                if (t.shot === "laser") core = this.add.rectangle(snapX, snapY, 16, 16, t.color).setAngle(45);
-                else if (t.shot === "orb" || t.shot === "plasma") core = this.add.circle(snapX, snapY, 12, t.color);
-                else if (t.shot === "ice") core = this.add.star(snapX, snapY, 6, 6, 12, t.color);
-                else if (t.shot === "buff") core = this.add.star(snapX, snapY, 5, 8, 14, t.color);
-                else core = this.add.triangle(snapX, snapY, 0, -13, 13, 13, -13, 13, t.color);
-
-                const glow = this.add.circle(snapX, snapY, 26, t.color, 0.35);
-
-                // Range is created but HIDDEN by default
-                const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
-                range.setStrokeStyle(2, 0xff4444, 0.65);
-                range.setVisible(false);
-
-                this.towers.push({
-                    x: snapX, y: snapY,
-                    data: Object.assign({}, t),
-                    lvl: 1, last: 0,
-                    core, glow, range, base
-                });
-            }
-
-            startWave() {
-                if (this.waveActive || this.paused) return;
-                this.wave++;
-                this.waveText.setText("WAVE " + this.wave);
-                this.waveActive = true;
-                this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
-                this.spawnTimer = 0;
-                sfx.wave();
-            }
-
-            showNextWaveText() {
-                if (this.nextWaveText) this.nextWaveText.destroy();
-                this.nextWaveText = this.add.text(W/2, H/2, "NEXT WAVE", {
-                    fontSize: "42px",
-                    color: "#00ff9d",
-                    fontStyle: "bold",
-                    stroke: "#003322",
-                    strokeThickness: 6
-                }).setOrigin(0.5);
-
-                this.tweens.add({
-                    targets: this.nextWaveText,
-                    alpha: 0,
-                    duration: 1200,
-                    ease: "Power2",
-                    onComplete: () => {
-                        if (this.nextWaveText) {
-                            this.nextWaveText.destroy();
-                            this.nextWaveText = null;
-                        }
-                    }
-                });
-            }
-
-            spawn() {
-                const keys = Object.keys(ENEMIES);
-                let maxIndex = 0;
-                if (this.wave >= 3) maxIndex = 1;
-                if (this.wave >= 5) maxIndex = 2;
-                if (this.wave >= 8) maxIndex = 3;
-                if (this.wave >= 12) maxIndex = 4;
-                if (this.wave >= 18) maxIndex = 5;
-
-                const key = keys[Phaser.Math.Between(0, maxIndex)];
-                const d = ENEMIES[key];
-
-                const hpMult = 1 + (this.wave - 1) * 0.18;
-                const speedMult = 1 + Math.min(this.wave * 0.015, 0.6);
-
-                let body;
-                if (d.shape === "square") {
-                    body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.8, d.size * 1.8, d.color);
-                    body.setStrokeStyle(2, 0xffffff, 0.6);
-                } else if (d.shape === "diamond") {
-                    body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.7, d.size * 1.7, d.color).setAngle(45);
-                    body.setStrokeStyle(2, 0xffffff, 0.6);
-                } else if (d.shape === "triangle") {
-                    body = this.add.triangle(PATH[0].x, PATH[0].y, 0, -d.size, d.size, d.size, -d.size, d.size, d.color);
-                } else {
-                    body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
-                    body.setStrokeStyle(2, 0xffffff, 0.5);
-                }
-
-                const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 8, d.color, 0.25);
-                ring.setStrokeStyle(2, 0xffffff, 0.5);
-
-                this.enemies.push({
-                    x: PATH[0].x, y: PATH[0].y,
-                    hp: d.hp * hpMult,
-                    max: d.hp * hpMult,
-                    speed: d.speed * speedMult,
-                    reward: Math.floor(d.reward * (1 + this.wave * 0.05)),
-                    idx: 0, body, ring, slow: 1, dot: 0
-                });
-            }
-
-            update(time, delta) {
-                if (this.paused || !this.gameStarted) return;
-                delta *= this.speed;
-
-                if (!this.waveActive && this.enemies.length === 0 && this.wave > 0) {
-                    this.showNextWaveText();
-                    this.time.delayedCall(1400, () => {
-                        if (!this.waveActive) this.startWave();
+                    const g = this.make.graphics({ x: 0, y: 0, add: false });
+                    g.fillStyle(0xffffff); g.fillCircle(4, 4, 4);
+                    g.generateTexture("flare", 8, 8); g.destroy();
+                    this.hitParticles = this.add.particles(0, 0, "flare", {
+                        speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 },
+                        lifespan: 450, blendMode: "ADD", emitting: false
                     });
                 }
 
-                if (this.waveActive && this.spawnLeft > 0) {
-                    this.spawnTimer += delta;
-                    if (this.spawnTimer > Math.max(280, 520 - this.wave * 8)) {
-                        this.spawn();
-                        this.spawnLeft--;
-                        this.spawnTimer = 0;
-                    }
+                hideAllRanges() {
+                    this.towers.forEach(tw => { if (tw.range) tw.range.setVisible(false); });
                 }
 
-                for (let i = this.enemies.length - 1; i >= 0; i--) {
-                    const e = this.enemies[i];
-                    if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
-
-                    const next = PATH[e.idx + 1];
-                    if (!next) {
-                        this.lives--;
-                        this.livesText.setText("❤️ " + this.lives);
-                        e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i, 1);
-                        if (this.lives <= 0) this.gameOver();
-                        continue;
-                    }
-
-                    const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
-                    if (dist < 8) e.idx++;
-                    else {
-                        const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
-                        const spd = e.speed * e.slow;
-                        e.x += Math.cos(ang) * spd * delta / 1000;
-                        e.y += Math.sin(ang) * spd * delta / 1000;
-                        e.body.setPosition(e.x, e.y);
-                        e.ring.setPosition(e.x, e.y);
-                    }
-
-                    if (e.hp <= 0) {
-                        this.gold += e.reward;
-                        this.mana += Math.floor(e.reward * 0.3);
-                        this.goldText.setText("💰 " + this.gold);
-                        this.manaText.setText("🔵 " + this.mana);
-                        this.hitParticles.setPosition(e.x, e.y);
-                        this.hitParticles.explode(16);
-                        e.body.destroy(); e.ring.destroy();
-                        this.enemies.splice(i, 1);
-                        sfx.death();
-                    }
+                showDamage(x, y, dmg, color = "#ffffff") {
+                    const txt = this.add.text(x, y - 10, Math.floor(dmg), {
+                        fontSize: "18px", color: color, fontStyle: "bold",
+                        stroke: "#000000", strokeThickness: 3
+                    }).setOrigin(0.5);
+                    this.tweens.add({
+                        targets: txt, y: y - 50, alpha: 0, duration: 700,
+                        ease: "Cubic.easeOut", onComplete: () => txt.destroy()
+                    });
                 }
 
-                for (const tw of this.towers) {
-                    if (time - tw.last < tw.data.rate / this.speed) continue;
-                    if (tw.data.shot === "buff") continue;
-
-                    let target = null, best = tw.data.range;
-                    for (const e of this.enemies) {
-                        const d = Phaser.Math.Distance.Between(tw.x, tw.y, e.x, e.y);
-                        if (d < best) { best = d; target = e; }
-                    }
-                    if (target) {
-                        this.fire(tw, target);
-                        tw.last = time;
-                        sfx.shoot();
-                    }
+                cycleSpeed() {
+                    this.speed = this.speed === 1 ? 2 : this.speed === 2 ? 3 : 1;
+                    this.speedBtn.setText(this.speed + "X");
                 }
 
-                for (let i = this.bullets.length - 1; i >= 0; i--) {
-                    const b = this.bullets[i];
-                    if (!b.target || !b.target.body.active) {
-                        b.gfx.destroy();
-                        if (b.trail) b.trail.destroy();
-                        this.bullets.splice(i, 1);
-                        continue;
-                    }
-
-                    if (b.type === "laser") {
-                        b.life -= delta;
-                        if (b.life <= 0) { b.gfx.destroy(); this.bullets.splice(i, 1); }
-                        continue;
-                    }
-
-                    const ang = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
-                    b.x += Math.cos(ang) * b.spd * delta / 1000;
-                    b.y += Math.sin(ang) * b.spd * delta / 1000;
-                    b.gfx.setPosition(b.x, b.y);
-                    if (b.trail) b.trail.setPosition(b.x, b.y);
-
-                    if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 16) {
-                        b.target.hp -= b.dmg;
-                        this.showDamage(b.target.x, b.target.y, b.dmg, "#ff6666");
-                        if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
-                        if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
-                        this.hitParticles.setPosition(b.x, b.y);
-                        this.hitParticles.explode(10);
-                        b.gfx.destroy();
-                        if (b.trail) b.trail.destroy();
-                        this.bullets.splice(i, 1);
-                        sfx.hit();
-                    }
+                togglePause() {
+                    this.paused = !this.paused;
+                    this.pauseBtn.setText(this.paused ? "▶" : "❚❚");
+                    this.pauseBtn.setBackgroundColor(this.paused ? "#225522" : "#442222");
                 }
 
-                if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
-                    this.waveActive = false;
-                    this.gold += 40 + this.wave * 10;
-                    this.mana += 15 + this.wave * 2;
+                showUpgrade(tw) {
+                    const sellValue = Math.floor(tw.data.cost * 0.6 + (tw.lvl - 1) * tw.data.upCost * 0.5);
+                    if (tw.lvl >= tw.data.maxLvl) {
+                        this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  MAX\nSell: ${sellValue}`);
+                        this.upBtn.setVisible(false);
+                    } else {
+                        const next = Math.floor(tw.data.dmg * 1.35);
+                        this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}\nDMG \( {tw.data.dmg}→ \){next}  Cost ${tw.data.upCost}\nSell: ${sellValue}`);
+                        this.upBtn.setVisible(true);
+                    }
+                    this.upPanel.setVisible(true);
+                }
+
+                upgradeSelected() {
+                    const tw = this.selectedTower;
+                    if (!tw || tw.lvl >= tw.data.maxLvl) return;
+                    if (this.gold < tw.data.upCost) return;
+                    this.gold -= tw.data.upCost;
+                    this.goldText.setText("💰 " + this.gold);
+                    tw.lvl++;
+                    tw.data.dmg = Math.floor(tw.data.dmg * 1.35);
+                    tw.data.range = Math.floor(tw.data.range * 1.12);
+                    tw.core.setFillStyle(tw.data.color);
+                    tw.glow.setRadius(26 + tw.lvl * 4);
+                    tw.range.setRadius(tw.data.range);
+                    sfx.up();
+                    this.showUpgrade(tw);
+                }
+
+                sellSelected() {
+                    const tw = this.selectedTower;
+                    if (!tw) return;
+                    const sellValue = Math.floor(tw.data.cost * 0.6 + (tw.lvl - 1) * tw.data.upCost * 0.5);
+                    this.gold += sellValue;
+                    this.goldText.setText("💰 " + this.gold);
+                    tw.base.destroy(); tw.core.destroy(); tw.glow.destroy(); tw.range.destroy();
+                    const idx = this.towers.indexOf(tw);
+                    if (idx > -1) this.towers.splice(idx, 1);
+                    this.selectedTower = null;
+                    this.upPanel.setVisible(false);
+                    sfx.sell();
+                }
+
+                tryPlace(x, y) {
+                    const t = TOWERS[this.selected];
+                    if (this.gold < t.cost || this.mana < t.mana) return;
+
+                    let valid = false, snapX = x, snapY = y;
+                    for (const s of FINAL_SPOTS) {
+                        if (Phaser.Math.Distance.Between(x, y, s.x, s.y) < 28) {
+                            valid = true; snapX = s.x; snapY = s.y; break;
+                        }
+                    }
+                    if (!valid) return;
+
+                    for (const tw of this.towers) {
+                        if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 18) return;
+                    }
+
+                    this.gold -= t.cost;
+                    this.mana -= t.mana;
                     this.goldText.setText("💰 " + this.gold);
                     this.manaText.setText("🔵 " + this.mana);
-                    this.cameras.main.shake(220, 0.008);
+                    sfx.place();
+
+                    const base = this.add.circle(snapX, snapY, 18, 0x0a0a18);
+                    base.setStrokeStyle(3, 0xffffff, 0.95);
+
+                    let core;
+                    if (t.shot === "laser") core = this.add.rectangle(snapX, snapY, 16, 16, t.color).setAngle(45);
+                    else if (t.shot === "orb" || t.shot === "plasma") core = this.add.circle(snapX, snapY, 12, t.color);
+                    else if (t.shot === "ice") core = this.add.star(snapX, snapY, 6, 6, 12, t.color);
+                    else if (t.shot === "buff") core = this.add.star(snapX, snapY, 5, 8, 14, t.color);
+                    else core = this.add.triangle(snapX, snapY, 0, -13, 13, 13, -13, 13, t.color);
+
+                    const glow = this.add.circle(snapX, snapY, 26, t.color, 0.35);
+                    const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.18);
+                    range.setStrokeStyle(2, 0xff4444, 0.65);
+                    range.setVisible(false);
+
+                    this.towers.push({
+                        x: snapX, y: snapY,
+                        data: Object.assign({}, t),
+                        lvl: 1, last: 0,
+                        core, glow, range, base
+                    });
+                }
+
+                startWave() {
+                    if (this.waveActive || this.paused) return;
+                    this.wave++;
+                    this.waveText.setText("WAVE " + this.wave);
+                    this.waveActive = true;
+                    this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
+                    this.spawnTimer = 0;
+                    sfx.wave();
+                }
+
+                showNextWaveText() {
+                    if (this.nextWaveText) this.nextWaveText.destroy();
+                    this.nextWaveText = this.add.text(W/2, H/2, "NEXT WAVE", {
+                        fontSize: "42px", color: "#00ff9d", fontStyle: "bold",
+                        stroke: "#003322", strokeThickness: 6
+                    }).setOrigin(0.5);
+                    this.tweens.add({
+                        targets: this.nextWaveText, alpha: 0, duration: 1200, ease: "Power2",
+                        onComplete: () => { if (this.nextWaveText) { this.nextWaveText.destroy(); this.nextWaveText = null; } }
+                    });
+                }
+
+                spawn() {
+                    const keys = Object.keys(ENEMIES);
+                    let maxIndex = 0;
+                    if (this.wave >= 3) maxIndex = 1;
+                    if (this.wave >= 5) maxIndex = 2;
+                    if (this.wave >= 8) maxIndex = 3;
+                    if (this.wave >= 12) maxIndex = 4;
+                    if (this.wave >= 18) maxIndex = 5;
+
+                    const key = keys[Phaser.Math.Between(0, maxIndex)];
+                    const d = ENEMIES[key];
+                    const hpMult = 1 + (this.wave - 1) * 0.18;
+                    const speedMult = 1 + Math.min(this.wave * 0.015, 0.6);
+
+                    let body;
+                    if (d.shape === "square") {
+                        body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.8, d.size * 1.8, d.color);
+                        body.setStrokeStyle(2, 0xffffff, 0.6);
+                    } else if (d.shape === "diamond") {
+                        body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 1.7, d.size * 1.7, d.color).setAngle(45);
+                        body.setStrokeStyle(2, 0xffffff, 0.6);
+                    } else if (d.shape === "triangle") {
+                        body = this.add.triangle(PATH[0].x, PATH[0].y, 0, -d.size, d.size, d.size, -d.size, d.size, d.color);
+                    } else {
+                        body = this.add.circle(PATH[0].x, PATH[0].y, d.size, d.color);
+                        body.setStrokeStyle(2, 0xffffff, 0.5);
+                    }
+
+                    const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 8, d.color, 0.25);
+                    ring.setStrokeStyle(2, 0xffffff, 0.5);
+
+                    this.enemies.push({
+                        x: PATH[0].x, y: PATH[0].y,
+                        hp: d.hp * hpMult, max: d.hp * hpMult,
+                        speed: d.speed * speedMult,
+                        reward: Math.floor(d.reward * (1 + this.wave * 0.05)),
+                        idx: 0, body, ring, slow: 1, dot: 0
+                    });
+                }
+
+                update(time, delta) {
+                    if (this.paused || !this.gameStarted) return;
+                    delta *= this.speed;
+
+                    if (!this.waveActive && this.enemies.length === 0 && this.wave > 0) {
+                        this.showNextWaveText();
+                        this.time.delayedCall(1400, () => {
+                            if (!this.waveActive) this.startWave();
+                        });
+                    }
+
+                    if (this.waveActive && this.spawnLeft > 0) {
+                        this.spawnTimer += delta;
+                        if (this.spawnTimer > Math.max(280, 520 - this.wave * 8)) {
+                            this.spawn();
+                            this.spawnLeft--;
+                            this.spawnTimer = 0;
+                        }
+                    }
+
+                    for (let i = this.enemies.length - 1; i >= 0; i--) {
+                        const e = this.enemies[i];
+                        if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
+
+                        const next = PATH[e.idx + 1];
+                        if (!next) {
+                            this.lives--;
+                            this.livesText.setText("❤️ " + this.lives);
+                            e.body.destroy(); e.ring.destroy();
+                            this.enemies.splice(i, 1);
+                            if (this.lives <= 0) this.gameOver();
+                            continue;
+                        }
+
+                        const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
+                        if (dist < 8) e.idx++;
+                        else {
+                            const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
+                            const spd = e.speed * e.slow;
+                            e.x += Math.cos(ang) * spd * delta / 1000;
+                            e.y += Math.sin(ang) * spd * delta / 1000;
+                            e.body.setPosition(e.x, e.y);
+                            e.ring.setPosition(e.x, e.y);
+                        }
+
+                        if (e.hp <= 0) {
+                            this.gold += e.reward;
+                            this.mana += Math.floor(e.reward * 0.3);
+                            this.goldText.setText("💰 " + this.gold);
+                            this.manaText.setText("🔵 " + this.mana);
+                            this.hitParticles.setPosition(e.x, e.y);
+                            this.hitParticles.explode(16);
+                            e.body.destroy(); e.ring.destroy();
+                            this.enemies.splice(i, 1);
+                            sfx.death();
+                        }
+                    }
+
+                    for (const tw of this.towers) {
+                        if (time - tw.last < tw.data.rate / this.speed) continue;
+                        if (tw.data.shot === "buff") continue;
+
+                        let target = null, best = tw.data.range;
+                        for (const e of this.enemies) {
+                            const d = Phaser.Math.Distance.Between(tw.x, tw.y, e.x, e.y);
+                            if (d < best) { best = d; target = e; }
+                        }
+                        if (target) {
+                            this.fire(tw, target);
+                            tw.last = time;
+                            sfx.shoot();
+                        }
+                    }
+
+                    for (let i = this.bullets.length - 1; i >= 0; i--) {
+                        const b = this.bullets[i];
+                        if (!b.target || !b.target.body.active) {
+                            b.gfx.destroy();
+                            if (b.trail) b.trail.destroy();
+                            this.bullets.splice(i, 1);
+                            continue;
+                        }
+
+                        if (b.type === "laser") {
+                            b.life -= delta;
+                            if (b.life <= 0) { b.gfx.destroy(); this.bullets.splice(i, 1); }
+                            continue;
+                        }
+
+                        const ang = Phaser.Math.Angle.Between(b.x, b.y, b.target.x, b.target.y);
+                        b.x += Math.cos(ang) * b.spd * delta / 1000;
+                        b.y += Math.sin(ang) * b.spd * delta / 1000;
+                        b.gfx.setPosition(b.x, b.y);
+                        if (b.trail) b.trail.setPosition(b.x, b.y);
+
+                        if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 16) {
+                            b.target.hp -= b.dmg;
+                            this.showDamage(b.target.x, b.target.y, b.dmg, "#ff6666");
+                            if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
+                            if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
+                            this.hitParticles.setPosition(b.x, b.y);
+                            this.hitParticles.explode(10);
+                            b.gfx.destroy();
+                            if (b.trail) b.trail.destroy();
+                            this.bullets.splice(i, 1);
+                            sfx.hit();
+                        }
+                    }
+
+                    if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
+                        this.waveActive = false;
+                        this.gold += 40 + this.wave * 10;
+                        this.mana += 15 + this.wave * 2;
+                        this.goldText.setText("💰 " + this.gold);
+                        this.manaText.setText("🔵 " + this.mana);
+                        this.cameras.main.shake(220, 0.008);
+
+                        // Save progress
+                        if (this.wave > highWave) highWave = this.wave;
+                        saveProgress({
+                            username: playerName,
+                            highWave: highWave,
+                            gold: this.gold,
+                            mana: this.mana
+                        });
+                    }
+                }
+
+                fire(tw, target) {
+                    const type = tw.data.shot;
+                    if (type === "laser") {
+                        const line = this.add.line(0, 0, tw.x, tw.y, target.x, target.y, tw.data.color)
+                            .setOrigin(0, 0).setLineWidth(5).setAlpha(0.95);
+                        target.hp -= tw.data.dmg;
+                        this.showDamage(target.x, target.y, tw.data.dmg, "#ffff00");
+                        this.hitParticles.setPosition(target.x, target.y);
+                        this.hitParticles.explode(14);
+                        this.bullets.push({ type: "laser", gfx: line, life: 140, target });
+                        return;
+                    }
+
+                    let gfx, trail = null;
+                    if (type === "orb" || type === "plasma") {
+                        gfx = this.add.circle(tw.x, tw.y, 8, tw.data.color);
+                        trail = this.add.circle(tw.x, tw.y, 14, tw.data.color, 0.35);
+                    } else if (type === "ice") {
+                        gfx = this.add.star(tw.x, tw.y, 5, 4, 8, tw.data.color);
+                    } else {
+                        gfx = this.add.circle(tw.x, tw.y, 6, 0xffffff);
+                        trail = this.add.circle(tw.x, tw.y, 10, tw.data.color, 0.4);
+                    }
+
+                    this.bullets.push({
+                        x: tw.x, y: tw.y, target,
+                        dmg: tw.data.dmg,
+                        spd: type === "plasma" ? 360 : 540,
+                        slow: tw.data.slow || 0,
+                        dot: tw.data.dot || 0,
+                        gfx, trail, type
+                    });
+                }
+
+                gameOver() {
+                    this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85);
+                    this.add.text(W/2, H/2 - 40, "GAME OVER", {
+                        fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
+                    }).setOrigin(0.5);
+                    this.add.text(W/2, H/2 + 20, `Best Wave: ${highWave}`, {
+                        fontSize: "22px", color: "#ffd700"
+                    }).setOrigin(0.5);
+                    this.add.text(W/2, H/2 + 60, "Refresh to play again", {
+                        fontSize: "16px", color: "#aaa"
+                    }).setOrigin(0.5);
+                    this.input.off("pointerdown");
+
+                    // Final save
+                    if (this.wave > highWave) highWave = this.wave;
+                    saveProgress({
+                        username: playerName,
+                        highWave: highWave,
+                        gold: this.gold,
+                        mana: this.mana
+                    });
                 }
             }
 
-            fire(tw, target) {
-                const type = tw.data.shot;
-
-                if (type === "laser") {
-                    const line = this.add.line(0, 0, tw.x, tw.y, target.x, target.y, tw.data.color)
-                        .setOrigin(0, 0).setLineWidth(5).setAlpha(0.95);
-                    target.hp -= tw.data.dmg;
-                    this.showDamage(target.x, target.y, tw.data.dmg, "#ffff00");
-                    this.hitParticles.setPosition(target.x, target.y);
-                    this.hitParticles.explode(14);
-                    this.bullets.push({ type: "laser", gfx: line, life: 140, target });
-                    return;
-                }
-
-                let gfx, trail = null;
-                if (type === "orb" || type === "plasma") {
-                    gfx = this.add.circle(tw.x, tw.y, 8, tw.data.color);
-                    trail = this.add.circle(tw.x, tw.y, 14, tw.data.color, 0.35);
-                } else if (type === "ice") {
-                    gfx = this.add.star(tw.x, tw.y, 5, 4, 8, tw.data.color);
-                } else {
-                    gfx = this.add.circle(tw.x, tw.y, 6, 0xffffff);
-                    trail = this.add.circle(tw.x, tw.y, 10, tw.data.color, 0.4);
-                }
-
-                this.bullets.push({
-                    x: tw.x, y: tw.y, target,
-                    dmg: tw.data.dmg,
-                    spd: type === "plasma" ? 360 : 540,
-                    slow: tw.data.slow || 0,
-                    dot: tw.data.dot || 0,
-                    gfx, trail, type
-                });
-            }
-
-            gameOver() {
-                this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85);
-                this.add.text(W/2, H/2 - 30, "GAME OVER", {
-                    fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
-                }).setOrigin(0.5);
-                this.add.text(W/2, H/2 + 30, "Refresh to restart", {
-                    fontSize: "18px", color: "#aaa"
-                }).setOrigin(0.5);
-                this.input.off("pointerdown");
-            }
+            new Phaser.Game({
+                type: Phaser.AUTO,
+                width: W,
+                height: H,
+                parent: "game-container",
+                backgroundColor: "#03030a",
+                scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+                scene: [GameScene]
+            });
         }
-
-        new Phaser.Game({
-            type: Phaser.AUTO,
-            width: W,
-            height: H,
-            parent: "game-container",
-            backgroundColor: "#03030a",
-            scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-            scene: [GameScene]
-        });
     </script>
 </body>
 </html>
