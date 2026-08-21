@@ -12,38 +12,56 @@
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: rgba(3,3,10,0.95); z-index: 100; color: white;
+            background: #03030a; z-index: 100; color: white; text-align: center; padding: 20px;
         }
         #ui-overlay.hidden { display: none; }
-        .title { font-size: 42px; color: #00e5ff; font-weight: bold; margin-bottom: 10px; text-shadow: 0 0 20px #00e5ff; }
-        .subtitle { font-size: 16px; color: #aaa; margin-bottom: 30px; }
+        .logo {
+            width: 280px; max-width: 80%;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 0 12px #00e5ff);
+        }
+        .desc {
+            font-size: 14px; color: #88ccdd; max-width: 300px; line-height: 1.5; margin-bottom: 22px;
+        }
         input {
-            padding: 14px 20px; font-size: 18px; border: 2px solid #00e5ff; border-radius: 8px;
+            padding: 14px 20px; font-size: 17px; border: 2px solid #00e5ff; border-radius: 10px;
             background: #0a0a18; color: white; width: 260px; text-align: center; outline: none;
+            margin-bottom: 8px;
         }
-        button {
-            margin-top: 20px; padding: 14px 40px; font-size: 18px; font-weight: bold;
-            background: #003d2e; color: white; border: 2px solid #00ff9d; border-radius: 8px; cursor: pointer;
+        button.main-btn {
+            margin-top: 14px; padding: 14px 42px; font-size: 17px; font-weight: bold;
+            background: #003d2e; color: white; border: 2px solid #00ff9d; border-radius: 10px; cursor: pointer;
         }
-        button:hover { background: #005c44; }
+        button.main-btn:hover { background: #005c44; }
         .map-btn {
-            margin: 10px; padding: 16px 30px; font-size: 16px; background: #0a0a18;
-            border: 2px solid #00e5ff; color: #00e5ff; border-radius: 8px; cursor: pointer; width: 220px;
+            margin: 8px; padding: 14px 28px; font-size: 15px; background: #0a0a18;
+            border: 2px solid #00e5ff; color: #00e5ff; border-radius: 10px; cursor: pointer; width: 230px;
         }
         .map-btn:hover { background: #003344; }
-        .highscore { margin-top: 25px; font-size: 15px; color: #ffd700; }
+        .credit {
+            margin-top: 28px; font-size: 13px; color: #666;
+        }
+        .credit a { color: #00e5ff; text-decoration: none; }
+        .highscore { margin-top: 12px; font-size: 14px; color: #ffd700; }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
 
-    <!-- Username Screen -->
+    <!-- START SCREEN -->
     <div id="ui-overlay">
-        <div class="title">WOBBLE WALLS</div>
-        <div class="subtitle">Enter your username</div>
-        <input type="text" id="usernameInput" placeholder="Your name" maxlength="12" autocomplete="off">
-        <button id="startBtn">CONTINUE</button>
+        <img src="https://iili.io/CQZ62p9.md.jpg" alt="Wobble Walls" class="logo">
+        <div class="desc">
+            A cyber-fantasy neon tower defense.<br>
+            Build towers, survive endless waves,<br>
+            and defend the kingdom.
+        </div>
+        <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="12" autocomplete="off">
+        <button class="main-btn" id="continueBtn">CONTINUE</button>
         <div class="highscore" id="highscoreText"></div>
+        <div class="credit">
+            Built by <a href="https://x.com/WoobleStudio" target="_blank">@WoobleStudio</a>
+        </div>
     </div>
 
     <script>
@@ -51,7 +69,7 @@
         const H = 1280;
         const TILE = 56;
 
-        // ===== 3 DIFFERENT MAPS =====
+        // ===== 3 MAPS =====
         const MAPS = {
             map1: {
                 name: "Neon Valley",
@@ -126,10 +144,50 @@
             orc:    { hp:160, speed:45,  reward:22, color:0xff3355, size:17, shape:"square" },
             bat:    { hp:45,  speed:120, reward:12, color:0xb14eff, size:12, shape:"triangle" },
             drone:  { hp:110, speed:65,  reward:16, color:0xffaa00, size:15, shape:"hex" },
-            golem:  { hp:300, speed:33,  reward:40, color:0x8888ff, size:22, shape:"square" }
+            golem:  { hp:300, speed:33,  reward:40, color:0x8888ff, size:22, shape:"square" },
+            // Boss
+            boss:   { hp:1200, speed:28, reward:180, color:0xff0044, size:32, shape:"square", isBoss:true }
         };
 
+        // ===== AUDIO =====
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let musicPlaying = false;
+        let musicNodes = [];
+
+        function startBackgroundMusic() {
+            if (musicPlaying) return;
+            musicPlaying = true;
+
+            // Ambient drone
+            const drone = audioCtx.createOscillator();
+            const droneGain = audioCtx.createGain();
+            drone.type = "sine";
+            drone.frequency.value = 55;
+            droneGain.gain.value = 0.04;
+            drone.connect(droneGain);
+            droneGain.connect(audioCtx.destination);
+            drone.start();
+
+            // Soft arpeggio
+            const notes = [110, 138.59, 164.81, 220];
+            let noteIdx = 0;
+            const arp = audioCtx.createOscillator();
+            const arpGain = audioCtx.createGain();
+            arp.type = "triangle";
+            arp.frequency.value = notes[0];
+            arpGain.gain.value = 0.025;
+            arp.connect(arpGain);
+            arpGain.connect(audioCtx.destination);
+            arp.start();
+
+            setInterval(() => {
+                noteIdx = (noteIdx + 1) % notes.length;
+                arp.frequency.setValueAtTime(notes[noteIdx], audioCtx.currentTime);
+            }, 900);
+
+            musicNodes = [drone, arp];
+        }
+
         function tone(freq, dur, type="square", vol=0.07) {
             try {
                 const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -147,7 +205,8 @@
             wave:  () => { tone(440, 0.1, "sine"); tone(660, 0.16, "sine", 0.05); },
             place: () => tone(560, 0.08, "triangle"),
             up:    () => { tone(620, 0.07); tone(920, 0.11); },
-            sell:  () => tone(300, 0.12, "triangle", 0.08)
+            sell:  () => tone(300, 0.12, "triangle", 0.08),
+            boss:  () => { tone(80, 0.4, "sawtooth", 0.12); tone(120, 0.5, "square", 0.08); }
         };
 
         // ===== SAVE / LOAD =====
@@ -160,10 +219,10 @@
             } catch(e) { return null; }
         }
 
-        // ===== UI OVERLAY LOGIC =====
+        // ===== UI =====
         const overlay = document.getElementById("ui-overlay");
         const usernameInput = document.getElementById("usernameInput");
-        const startBtn = document.getElementById("startBtn");
+        const continueBtn = document.getElementById("continueBtn");
         const highscoreText = document.getElementById("highscoreText");
 
         let playerName = "";
@@ -177,21 +236,28 @@
             highscoreText.innerText = `Best Wave: ${highWave}`;
         }
 
-        startBtn.onclick = () => {
+        continueBtn.onclick = () => {
             const name = usernameInput.value.trim();
             if (!name) {
                 usernameInput.style.borderColor = "#ff4444";
                 return;
             }
             playerName = name;
-            // Show map selection
+
+            // Start music on first interaction
+            if (audioCtx.state === "suspended") audioCtx.resume();
+            startBackgroundMusic();
+
+            // Map selection
             overlay.innerHTML = `
-                <div class="title">SELECT MAP</div>
-                <div class="subtitle">Welcome, ${playerName}</div>
+                <img src="https://iili.io/CQZ62p9.md.jpg" alt="Wobble Walls" class="logo" style="width:220px;margin-bottom:12px;">
+                <div style="font-size:18px;color:#00e5ff;margin-bottom:6px;">SELECT MAP</div>
+                <div style="font-size:14px;color:#aaa;margin-bottom:18px;">Welcome, ${playerName}</div>
                 <button class="map-btn" data-map="map1">1. Neon Valley</button>
                 <button class="map-btn" data-map="map2">2. Cyber Spiral</button>
                 <button class="map-btn" data-map="map3">3. Void Corridor</button>
                 <div class="highscore">Best Wave: ${highWave}</div>
+                <div class="credit">Built by <a href="https://x.com/WoobleStudio" target="_blank">@WoobleStudio</a></div>
             `;
             document.querySelectorAll(".map-btn").forEach(btn => {
                 btn.onclick = () => {
@@ -199,7 +265,6 @@
                     PATH = MAPS[currentMap].path;
                     rebuildSpots();
                     overlay.classList.add("hidden");
-                    // Start Phaser
                     startGame();
                 };
             });
@@ -230,10 +295,6 @@
                 }
 
                 create() {
-                    this.input.once("pointerdown", () => {
-                        if (audioCtx.state === "suspended") audioCtx.resume();
-                    });
-
                     this.add.rectangle(W/2, H/2, W, H, 0x050510);
 
                     const bgGrid = this.add.graphics();
@@ -382,7 +443,7 @@
 
                     this.add.text(W/2, H/2 - 80, "WOBBLE WALLS", {
                         fontSize: "48px", color: "#00e5ff", fontStyle: "bold"
-                    }).setOrigin(0.5).setAlpha(0.3);
+                    }).setOrigin(0.5).setAlpha(0.25);
 
                     const g = this.make.graphics({ x: 0, y: 0, add: false });
                     g.fillStyle(0xffffff); g.fillCircle(4, 4, 4);
@@ -512,25 +573,65 @@
                     this.wave++;
                     this.waveText.setText("WAVE " + this.wave);
                     this.waveActive = true;
-                    this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
+
+                    // Boss every 5 waves
+                    if (this.wave % 5 === 0) {
+                        this.spawnLeft = 1; // only boss
+                        sfx.boss();
+                    } else {
+                        this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
+                    }
                     this.spawnTimer = 0;
                     sfx.wave();
                 }
 
                 showNextWaveText() {
                     if (this.nextWaveText) this.nextWaveText.destroy();
-                    this.nextWaveText = this.add.text(W/2, H/2, "NEXT WAVE", {
-                        fontSize: "42px", color: "#00ff9d", fontStyle: "bold",
-                        stroke: "#003322", strokeThickness: 6
+                    const isBossNext = (this.wave + 1) % 5 === 0;
+                    this.nextWaveText = this.add.text(W/2, H/2, isBossNext ? "⚠ BOSS WAVE ⚠" : "NEXT WAVE", {
+                        fontSize: isBossNext ? "36px" : "42px",
+                        color: isBossNext ? "#ff2244" : "#00ff9d",
+                        fontStyle: "bold",
+                        stroke: "#000",
+                        strokeThickness: 6
                     }).setOrigin(0.5);
                     this.tweens.add({
-                        targets: this.nextWaveText, alpha: 0, duration: 1200, ease: "Power2",
+                        targets: this.nextWaveText, alpha: 0, duration: 1400, ease: "Power2",
                         onComplete: () => { if (this.nextWaveText) { this.nextWaveText.destroy(); this.nextWaveText = null; } }
                     });
                 }
 
                 spawn() {
-                    const keys = Object.keys(ENEMIES);
+                    // Boss wave
+                    if (this.wave % 5 === 0) {
+                        const d = ENEMIES.boss;
+                        const hpMult = 1 + (this.wave / 5) * 0.6;
+
+                        const body = this.add.rectangle(PATH[0].x, PATH[0].y, d.size * 2.1, d.size * 2.1, d.color);
+                        body.setStrokeStyle(3, 0xffffff, 0.9);
+
+                        const ring = this.add.circle(PATH[0].x, PATH[0].y, d.size + 14, d.color, 0.3);
+                        ring.setStrokeStyle(3, 0xff6688, 0.8);
+
+                        // Boss label
+                        const label = this.add.text(PATH[0].x, PATH[0].y - 40, "BOSS", {
+                            fontSize: "14px", color: "#ff2244", fontStyle: "bold"
+                        }).setOrigin(0.5);
+
+                        this.enemies.push({
+                            x: PATH[0].x, y: PATH[0].y,
+                            hp: d.hp * hpMult,
+                            max: d.hp * hpMult,
+                            speed: d.speed,
+                            reward: d.reward + this.wave * 15,
+                            idx: 0, body, ring, label,
+                            slow: 1, dot: 0, isBoss: true
+                        });
+                        return;
+                    }
+
+                    // Normal enemies
+                    const keys = Object.keys(ENEMIES).filter(k => k !== "boss");
                     let maxIndex = 0;
                     if (this.wave >= 3) maxIndex = 1;
                     if (this.wave >= 5) maxIndex = 2;
@@ -575,14 +676,15 @@
 
                     if (!this.waveActive && this.enemies.length === 0 && this.wave > 0) {
                         this.showNextWaveText();
-                        this.time.delayedCall(1400, () => {
+                        this.time.delayedCall(1500, () => {
                             if (!this.waveActive) this.startWave();
                         });
                     }
 
                     if (this.waveActive && this.spawnLeft > 0) {
                         this.spawnTimer += delta;
-                        if (this.spawnTimer > Math.max(280, 520 - this.wave * 8)) {
+                        const delay = this.wave % 5 === 0 ? 800 : Math.max(280, 520 - this.wave * 8);
+                        if (this.spawnTimer > delay) {
                             this.spawn();
                             this.spawnLeft--;
                             this.spawnTimer = 0;
@@ -595,9 +697,10 @@
 
                         const next = PATH[e.idx + 1];
                         if (!next) {
-                            this.lives--;
+                            this.lives -= e.isBoss ? 5 : 1;
                             this.livesText.setText("❤️ " + this.lives);
                             e.body.destroy(); e.ring.destroy();
+                            if (e.label) e.label.destroy();
                             this.enemies.splice(i, 1);
                             if (this.lives <= 0) this.gameOver();
                             continue;
@@ -612,6 +715,7 @@
                             e.y += Math.sin(ang) * spd * delta / 1000;
                             e.body.setPosition(e.x, e.y);
                             e.ring.setPosition(e.x, e.y);
+                            if (e.label) e.label.setPosition(e.x, e.y - 40);
                         }
 
                         if (e.hp <= 0) {
@@ -620,8 +724,10 @@
                             this.goldText.setText("💰 " + this.gold);
                             this.manaText.setText("🔵 " + this.mana);
                             this.hitParticles.setPosition(e.x, e.y);
-                            this.hitParticles.explode(16);
+                            this.hitParticles.explode(e.isBoss ? 30 : 16);
+                            if (e.isBoss) this.cameras.main.shake(300, 0.012);
                             e.body.destroy(); e.ring.destroy();
+                            if (e.label) e.label.destroy();
                             this.enemies.splice(i, 1);
                             sfx.death();
                         }
@@ -686,7 +792,6 @@
                         this.manaText.setText("🔵 " + this.mana);
                         this.cameras.main.shake(220, 0.008);
 
-                        // Save progress
                         if (this.wave > highWave) highWave = this.wave;
                         saveProgress({
                             username: playerName,
@@ -744,7 +849,6 @@
                     }).setOrigin(0.5);
                     this.input.off("pointerdown");
 
-                    // Final save
                     if (this.wave > highWave) highWave = this.wave;
                     saveProgress({
                         username: playerName,
