@@ -119,7 +119,8 @@
                 }
                 return min;
             }
-            FINAL_SPOTS = spots.filter(s => distToPath(s.x, s.y) > 42);
+            // Sedikit lebih longgar supaya tower besar tidak terlalu dekat path
+            FINAL_SPOTS = spots.filter(s => distToPath(s.x, s.y) > 48);
         }
         rebuildSpots();
 
@@ -137,14 +138,15 @@
             dragon:   { name:"DRAGON",   cost:240, mana:35, range:215, dmg:65, rate:1300, color:0xff2200, upCost:160, maxLvl:3, shot:"plasma", key:"dragon",  element:"Fire", burn:10 }
         };
 
+        // ===== ENEMY LEBIH BESAR =====
         const ENEMIES = {
-            goblin: { hp:50,  speed:80,  reward:8,  size:28, key:"goblin" },
-            runner: { hp:30,  speed:155, reward:6,  size:26, key:"runner" },
-            orc:    { hp:150, speed:46,  reward:20, size:34, key:"orc" },
-            bat:    { hp:42,  speed:125, reward:11, size:28, key:"bat" },
-            drone:  { hp:100, speed:68,  reward:15, size:30, key:"drone_e" },
-            golem:  { hp:280, speed:34,  reward:38, size:40, key:"golem" },
-            boss:   { hp:1100, speed:27, reward:160, size:64, key:"boss", isBoss:true }
+            goblin: { hp:50,  speed:80,  reward:8,  size:38, key:"goblin" },
+            runner: { hp:30,  speed:155, reward:6,  size:36, key:"runner" },
+            orc:    { hp:150, speed:46,  reward:20, size:46, key:"orc" },
+            bat:    { hp:42,  speed:125, reward:11, size:38, key:"bat" },
+            drone:  { hp:100, speed:68,  reward:15, size:42, key:"drone_e" },
+            golem:  { hp:280, speed:34,  reward:38, size:54, key:"golem" },
+            boss:   { hp:1100, speed:27, reward:160, size:80, key:"boss", isBoss:true }
         };
 
         // ===== AUDIO =====
@@ -232,7 +234,6 @@
             achieve: () => { tone(523, 0.1); tone(659, 0.12); tone(784, 0.15); }
         };
 
-        // ===== SAVE + ACHIEVEMENTS =====
         function saveProgress(data) {
             localStorage.setItem("wobblewalls_save", JSON.stringify(data));
         }
@@ -246,7 +247,6 @@
         };
         let bossKilled = 0;
 
-        // UI
         const overlay = document.getElementById("ui-overlay");
         const usernameInput = document.getElementById("usernameInput");
         const continueBtn = document.getElementById("continueBtn");
@@ -354,19 +354,21 @@
                     sep.lineStyle(3, 0xffffff, 0.85);
                     sep.lineBetween(15, 148, W-15, 148);
 
-                    // Path
+                    // ===== JALUR LEBIH TEBAL =====
                     const pathG = this.add.graphics();
-                    pathG.lineStyle(40, 0xffffff, 0.1);
+                    pathG.lineStyle(52, 0xffffff, 0.12);
                     pathG.beginPath();
                     pathG.moveTo(PATH[0].x, PATH[0].y);
                     for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                     pathG.strokePath();
-                    pathG.lineStyle(22, 0xffffff, 0.95);
+
+                    pathG.lineStyle(32, 0xffffff, 0.95);
                     pathG.beginPath();
                     pathG.moveTo(PATH[0].x, PATH[0].y);
                     for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                     pathG.strokePath();
-                    pathG.lineStyle(12, 0x0a0a18, 1);
+
+                    pathG.lineStyle(18, 0x0a0a18, 1);
                     pathG.beginPath();
                     pathG.moveTo(PATH[0].x, PATH[0].y);
                     for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
@@ -472,7 +474,7 @@
                         if (p.y > 200 && p.y < H - 150) {
                             let clicked = null;
                             for (const tw of this.towers) {
-                                if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 32) {
+                                if (Phaser.Math.Distance.Between(p.x, p.y, tw.x, tw.y) < 36) {
                                     clicked = tw; break;
                                 }
                             }
@@ -503,7 +505,6 @@
                     });
                 }
 
-                // Achievement popup
                 showAchievement(title) {
                     if (this.achieveText) this.achieveText.destroy();
                     this.achieveText = this.add.text(W/2, 180, "🏆 " + title, {
@@ -532,13 +533,11 @@
                 }
 
                 checkAchievements() {
-                    // Wave 15
                     if (this.wave >= 15 && !achievements.wave15) {
                         achievements.wave15 = true;
                         this.showAchievement("Wave Survivor (Wave 15)");
                         this.saveAll();
                     }
-                    // 3 Bosses
                     if (bossKilled >= 3 && !achievements.boss3) {
                         achievements.boss3 = true;
                         this.showAchievement("Boss Hunter (3 Bosses)");
@@ -641,7 +640,7 @@
                     if (!valid) return;
 
                     for (const tw of this.towers) {
-                        if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 20) return;
+                        if (Phaser.Math.Distance.Between(snapX, snapY, tw.x, tw.y) < 24) return;
                     }
 
                     this.gold -= t.cost;
@@ -650,7 +649,8 @@
                     this.manaText.setText("🔵 " + this.mana);
                     sfx.place();
 
-                    const sprite = this.add.image(snapX, snapY, t.key).setDisplaySize(48, 48);
+                    // ===== TOWER LEBIH BESAR =====
+                    const sprite = this.add.image(snapX, snapY, t.key).setDisplaySize(58, 58);
                     sprite.setDepth(10);
 
                     const range = this.add.circle(snapX, snapY, t.range, 0xff0000, 0.15);
@@ -671,12 +671,10 @@
                     this.waveText.setText("WAVE " + this.wave);
                     this.waveActive = true;
 
-                    // Better scaling
                     if (this.wave % 5 === 0) {
                         this.spawnLeft = 1;
                         sfx.boss();
                     } else {
-                        // Smooth scaling: starts gentle, increases gradually
                         this.spawnLeft = 5 + Math.floor(this.wave * 1.35) + Math.floor(this.wave / 8);
                     }
                     this.spawnTimer = 0;
@@ -703,7 +701,6 @@
                 spawn() {
                     if (this.wave % 5 === 0) {
                         const d = ENEMIES.boss;
-                        // Boss HP scales more reasonably
                         const hpMult = 1 + (this.wave / 5) * 0.45;
 
                         const sprite = this.add.image(PATH[0].x, PATH[0].y, "boss").setDisplaySize(d.size, d.size);
@@ -738,7 +735,6 @@
                     const key = keys[Phaser.Math.Between(0, maxIndex)];
                     const d = ENEMIES[key];
 
-                    // Better HP scaling (less aggressive early, stronger later)
                     const hpMult = 1 + Math.pow(this.wave * 0.12, 1.15);
                     const speedMult = 1 + Math.min(this.wave * 0.012, 0.55);
 
@@ -801,7 +797,7 @@
                         }
 
                         const dist = Phaser.Math.Distance.Between(e.x, e.y, next.x, next.y);
-                        if (dist < 8) e.idx++;
+                        if (dist < 10) e.idx++;
                         else {
                             const ang = Phaser.Math.Angle.Between(e.x, e.y, next.x, next.y);
                             const spd = e.speed * e.slow;
@@ -875,7 +871,7 @@
                         b.gfx.setPosition(b.x, b.y);
                         if (b.trail) b.trail.setPosition(b.x, b.y);
 
-                        if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 18) {
+                        if (Phaser.Math.Distance.Between(b.x, b.y, b.target.x, b.target.y) < 20) {
                             b.target.hp -= b.dmg;
                             this.showDamage(b.target.x, b.target.y, b.dmg, "#ff6666");
 
@@ -908,7 +904,7 @@
 
                     if (type === "laser") {
                         const line = this.add.line(0, 0, tw.x, tw.y, target.x, target.y, tw.data.color)
-                            .setOrigin(0, 0).setLineWidth(5).setAlpha(0.95);
+                            .setOrigin(0, 0).setLineWidth(6).setAlpha(0.95);
                         target.hp -= tw.data.dmg;
                         this.showDamage(target.x, target.y, tw.data.dmg, "#ffff00");
                         this.hitParticles.setPosition(target.x, target.y);
@@ -919,13 +915,13 @@
 
                     let gfx, trail = null;
                     if (type === "orb" || type === "plasma") {
-                        gfx = this.add.circle(tw.x, tw.y, 8, tw.data.color);
-                        trail = this.add.circle(tw.x, tw.y, 14, tw.data.color, 0.35);
+                        gfx = this.add.circle(tw.x, tw.y, 9, tw.data.color);
+                        trail = this.add.circle(tw.x, tw.y, 15, tw.data.color, 0.35);
                     } else if (type === "ice") {
-                        gfx = this.add.star(tw.x, tw.y, 5, 4, 8, tw.data.color);
+                        gfx = this.add.star(tw.x, tw.y, 5, 5, 9, tw.data.color);
                     } else {
-                        gfx = this.add.circle(tw.x, tw.y, 6, 0xffffff);
-                        trail = this.add.circle(tw.x, tw.y, 10, tw.data.color, 0.4);
+                        gfx = this.add.circle(tw.x, tw.y, 7, 0xffffff);
+                        trail = this.add.circle(tw.x, tw.y, 12, tw.data.color, 0.4);
                     }
 
                     this.bullets.push({
