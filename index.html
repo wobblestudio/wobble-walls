@@ -123,31 +123,31 @@
         }
         rebuildSpots();
 
-        // ===== ELEMENT SYSTEM =====
+        // ===== BALANCED TOWERS =====
         const TOWERS = {
-            archer:   { name:"ARCHER",   cost:50,  mana:0,  range:150, dmg:14, rate:480,  color:0x00f0ff, upCost:40,  maxLvl:3, shot:"bullet", key:"archer",  element:"Physical" },
-            mage:     { name:"MAGE",     cost:90,  mana:10, range:165, dmg:16, rate:700,  color:0xff2d95, upCost:70,  maxLvl:3, shot:"orb",    key:"mage",    element:"Arcane" },
-            tesla:    { name:"TESLA",    cost:140, mana:15, range:180, dmg:28, rate:880,  color:0xffee00, upCost:100, maxLvl:3, shot:"laser",  key:"tesla",   element:"Lightning" },
-            cryo:     { name:"CRYO",     cost:110, mana:12, range:170, dmg:12, rate:640,  color:0x66ccff, upCost:80,  maxLvl:3, shot:"ice",    key:"cryo",    element:"Ice", slow:0.45 },
-            toxic:    { name:"TOXIC",    cost:120, mana:10, range:160, dmg:10, rate:550,  color:0x39ff14, upCost:85,  maxLvl:3, shot:"dot",    key:"toxic",   element:"Poison", dot:8 },
-            plasma:   { name:"PLASMA",   cost:180, mana:20, range:200, dmg:45, rate:1050, color:0xff6600, upCost:130, maxLvl:3, shot:"plasma", key:"plasma",  element:"Fire", burn:6 },
-            beacon:   { name:"BEACON",   cost:160, mana:25, range:140, dmg:0,  rate:9999, color:0xff99ff, upCost:110, maxLvl:3, shot:"buff",   key:"beacon",  element:"Holy" },
-            drone:    { name:"DRONE",    cost:130, mana:15, range:190, dmg:22, rate:620,  color:0x00ffaa, upCost:95,  maxLvl:3, shot:"bullet", key:"drone",   element:"Physical" },
-            totem:    { name:"TOTEM",    cost:150, mana:18, range:175, dmg:18, rate:750,  color:0xaa66ff, upCost:105, maxLvl:3, shot:"orb",    key:"totem",   element:"Dark" },
-            dragon:   { name:"DRAGON",   cost:250, mana:40, range:220, dmg:70, rate:1400, color:0xff2200, upCost:180, maxLvl:3, shot:"plasma", key:"dragon",  element:"Fire", burn:12 }
+            archer:   { name:"ARCHER",   cost:45,  mana:0,  range:155, dmg:13, rate:420,  color:0x00f0ff, upCost:35,  maxLvl:3, shot:"bullet", key:"archer",  element:"Physical" },
+            mage:     { name:"MAGE",     cost:85,  mana:8,  range:160, dmg:15, rate:680,  color:0xff2d95, upCost:60,  maxLvl:3, shot:"orb",    key:"mage",    element:"Arcane" },
+            tesla:    { name:"TESLA",    cost:130, mana:12, range:175, dmg:26, rate:820,  color:0xffee00, upCost:90,  maxLvl:3, shot:"laser",  key:"tesla",   element:"Lightning" },
+            cryo:     { name:"CRYO",     cost:100, mana:10, range:165, dmg:11, rate:600,  color:0x66ccff, upCost:70,  maxLvl:3, shot:"ice",    key:"cryo",    element:"Ice", slow:0.42 },
+            toxic:    { name:"TOXIC",    cost:110, mana:9,  range:155, dmg:9,  rate:520,  color:0x39ff14, upCost:75,  maxLvl:3, shot:"dot",    key:"toxic",   element:"Poison", dot:7 },
+            plasma:   { name:"PLASMA",   cost:170, mana:18, range:195, dmg:42, rate:980,  color:0xff6600, upCost:120, maxLvl:3, shot:"plasma", key:"plasma",  element:"Fire", burn:5 },
+            beacon:   { name:"BEACON",   cost:150, mana:20, range:135, dmg:0,  rate:9999, color:0xff99ff, upCost:100, maxLvl:3, shot:"buff",   key:"beacon",  element:"Holy" },
+            drone:    { name:"DRONE",    cost:120, mana:12, range:185, dmg:20, rate:580,  color:0x00ffaa, upCost:85,  maxLvl:3, shot:"bullet", key:"drone",   element:"Physical" },
+            totem:    { name:"TOTEM",    cost:140, mana:15, range:170, dmg:17, rate:700,  color:0xaa66ff, upCost:95,  maxLvl:3, shot:"orb",    key:"totem",   element:"Dark" },
+            dragon:   { name:"DRAGON",   cost:240, mana:35, range:215, dmg:65, rate:1300, color:0xff2200, upCost:160, maxLvl:3, shot:"plasma", key:"dragon",  element:"Fire", burn:10 }
         };
 
         const ENEMIES = {
-            goblin: { hp:55,  speed:78,  reward:9,  size:28, key:"goblin" },
-            runner: { hp:32,  speed:150, reward:7,  size:26, key:"runner" },
-            orc:    { hp:160, speed:45,  reward:22, size:34, key:"orc" },
-            bat:    { hp:45,  speed:120, reward:12, size:28, key:"bat" },
-            drone:  { hp:110, speed:65,  reward:16, size:30, key:"drone_e" },
-            golem:  { hp:300, speed:33,  reward:40, size:40, key:"golem" },
-            boss:   { hp:1200, speed:28, reward:180, size:64, key:"boss", isBoss:true }
+            goblin: { hp:50,  speed:80,  reward:8,  size:28, key:"goblin" },
+            runner: { hp:30,  speed:155, reward:6,  size:26, key:"runner" },
+            orc:    { hp:150, speed:46,  reward:20, size:34, key:"orc" },
+            bat:    { hp:42,  speed:125, reward:11, size:28, key:"bat" },
+            drone:  { hp:100, speed:68,  reward:15, size:30, key:"drone_e" },
+            golem:  { hp:280, speed:34,  reward:38, size:40, key:"golem" },
+            boss:   { hp:1100, speed:27, reward:160, size:64, key:"boss", isBoss:true }
         };
 
-        // ===== IMPROVED AUDIO =====
+        // ===== AUDIO =====
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicPlaying = false;
         let musicMuted = false;
@@ -157,7 +157,6 @@
             if (musicPlaying) return;
             musicPlaying = true;
 
-            // Deep drone
             const drone = audioCtx.createOscillator();
             const droneGain = audioCtx.createGain();
             drone.type = "sine";
@@ -167,7 +166,6 @@
             droneGain.connect(audioCtx.destination);
             drone.start();
 
-            // Soft pad
             const pad = audioCtx.createOscillator();
             const padGain = audioCtx.createGain();
             pad.type = "triangle";
@@ -177,7 +175,6 @@
             padGain.connect(audioCtx.destination);
             pad.start();
 
-            // Arpeggio
             const notes = [130.81, 164.81, 196.00, 246.94, 196.00, 164.81];
             let noteIdx = 0;
             const arp = audioCtx.createOscillator();
@@ -211,7 +208,6 @@
         }
 
         function tone(freq, dur, type="square", vol=0.08) {
-            if (musicMuted && type !== "square") return; // keep SFX even if muted? optional
             try {
                 const o = audioCtx.createOscillator(), g = audioCtx.createGain();
                 o.connect(g); g.connect(audioCtx.destination);
@@ -232,15 +228,23 @@
             sell:  () => tone(280, 0.12, "triangle", 0.07),
             boss:  () => { tone(70, 0.35, "sawtooth", 0.1); tone(110, 0.4, "square", 0.07); },
             ice:   () => tone(900, 0.08, "sine", 0.05),
-            fire:  () => tone(300, 0.1, "sawtooth", 0.06)
+            fire:  () => tone(300, 0.1, "sawtooth", 0.06),
+            achieve: () => { tone(523, 0.1); tone(659, 0.12); tone(784, 0.15); }
         };
 
+        // ===== SAVE + ACHIEVEMENTS =====
         function saveProgress(data) {
             localStorage.setItem("wobblewalls_save", JSON.stringify(data));
         }
         function loadProgress() {
             try { return JSON.parse(localStorage.getItem("wobblewalls_save")) || null; } catch(e) { return null; }
         }
+
+        let achievements = {
+            wave15: false,
+            boss3: false
+        };
+        let bossKilled = 0;
 
         // UI
         const overlay = document.getElementById("ui-overlay");
@@ -255,6 +259,8 @@
         if (saved) {
             playerName = saved.username || "";
             highWave = saved.highWave || 0;
+            achievements = saved.achievements || achievements;
+            bossKilled = saved.bossKilled || 0;
             usernameInput.value = playerName;
             highscoreText.innerText = `Best Wave: ${highWave}`;
         }
@@ -316,8 +322,8 @@
                 }
 
                 init() {
-                    this.gold = 300;
-                    this.mana = 50;
+                    this.gold = 280;
+                    this.mana = 40;
                     this.lives = 25;
                     this.wave = 0;
                     this.enemies = [];
@@ -332,6 +338,7 @@
                     this.selectedTower = null;
                     this.gameStarted = false;
                     this.nextWaveText = null;
+                    this.achieveText = null;
                 }
 
                 create() {
@@ -377,8 +384,8 @@
                     this.add.rectangle(W/2, 36, W, 72, 0x08081a, 0.95);
                     this.add.rectangle(W/2, 72, W, 3, 0xffffff, 0.75);
 
-                    this.goldText  = this.add.text(16, 10, "💰 300", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
-                    this.manaText  = this.add.text(120, 10, "🔵 50", { fontSize: "18px", color: "#66ccff", fontStyle: "bold" });
+                    this.goldText  = this.add.text(16, 10, "💰 280", { fontSize: "18px", color: "#ffd700", fontStyle: "bold" });
+                    this.manaText  = this.add.text(120, 10, "🔵 40", { fontSize: "18px", color: "#66ccff", fontStyle: "bold" });
                     this.livesText = this.add.text(220, 10, "❤️ 25", { fontSize: "18px", color: "#ff4d6d", fontStyle: "bold" });
                     this.waveText  = this.add.text(320, 10, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
                     this.nameText  = this.add.text(480, 10, playerName, { fontSize: "16px", color: "#ffffff" });
@@ -496,6 +503,61 @@
                     });
                 }
 
+                // Achievement popup
+                showAchievement(title) {
+                    if (this.achieveText) this.achieveText.destroy();
+                    this.achieveText = this.add.text(W/2, 180, "🏆 " + title, {
+                        fontSize: "22px",
+                        color: "#ffd700",
+                        fontStyle: "bold",
+                        backgroundColor: "#1a1a00",
+                        padding: { x: 16, y: 10 }
+                    }).setOrigin(0.5).setDepth(100);
+
+                    sfx.achieve();
+
+                    this.tweens.add({
+                        targets: this.achieveText,
+                        alpha: 0,
+                        y: 150,
+                        duration: 2500,
+                        ease: "Power2",
+                        onComplete: () => {
+                            if (this.achieveText) {
+                                this.achieveText.destroy();
+                                this.achieveText = null;
+                            }
+                        }
+                    });
+                }
+
+                checkAchievements() {
+                    // Wave 15
+                    if (this.wave >= 15 && !achievements.wave15) {
+                        achievements.wave15 = true;
+                        this.showAchievement("Wave Survivor (Wave 15)");
+                        this.saveAll();
+                    }
+                    // 3 Bosses
+                    if (bossKilled >= 3 && !achievements.boss3) {
+                        achievements.boss3 = true;
+                        this.showAchievement("Boss Hunter (3 Bosses)");
+                        this.saveAll();
+                    }
+                }
+
+                saveAll() {
+                    if (this.wave > highWave) highWave = this.wave;
+                    saveProgress({
+                        username: playerName,
+                        highWave: highWave,
+                        gold: this.gold,
+                        mana: this.mana,
+                        achievements: achievements,
+                        bossKilled: bossKilled
+                    });
+                }
+
                 hideAllRanges() {
                     this.towers.forEach(tw => { if (tw.range) tw.range.setVisible(false); });
                 }
@@ -529,7 +591,7 @@
                         this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  MAX\nElement: ${elem}\nSell: ${sellValue}`);
                         this.upBtn.setVisible(false);
                     } else {
-                        const next = Math.floor(tw.data.dmg * 1.35);
+                        const next = Math.floor(tw.data.dmg * 1.32);
                         this.upText.setText(`\( {tw.data.name}  Lv \){tw.lvl}  [${elem}]\nDMG \( {tw.data.dmg}→ \){next}  Cost ${tw.data.upCost}\nSell: ${sellValue}`);
                         this.upBtn.setVisible(true);
                     }
@@ -543,8 +605,8 @@
                     this.gold -= tw.data.upCost;
                     this.goldText.setText("💰 " + this.gold);
                     tw.lvl++;
-                    tw.data.dmg = Math.floor(tw.data.dmg * 1.35);
-                    tw.data.range = Math.floor(tw.data.range * 1.12);
+                    tw.data.dmg = Math.floor(tw.data.dmg * 1.32);
+                    tw.data.range = Math.floor(tw.data.range * 1.1);
                     tw.range.setRadius(tw.data.range);
                     this.tweens.add({ targets: tw.sprite, scale: 1.3, duration: 120, yoyo: true });
                     sfx.up();
@@ -609,14 +671,17 @@
                     this.waveText.setText("WAVE " + this.wave);
                     this.waveActive = true;
 
+                    // Better scaling
                     if (this.wave % 5 === 0) {
                         this.spawnLeft = 1;
                         sfx.boss();
                     } else {
-                        this.spawnLeft = 6 + Math.floor(this.wave * 1.8);
+                        // Smooth scaling: starts gentle, increases gradually
+                        this.spawnLeft = 5 + Math.floor(this.wave * 1.35) + Math.floor(this.wave / 8);
                     }
                     this.spawnTimer = 0;
                     sfx.wave();
+                    this.checkAchievements();
                 }
 
                 showNextWaveText() {
@@ -638,7 +703,8 @@
                 spawn() {
                     if (this.wave % 5 === 0) {
                         const d = ENEMIES.boss;
-                        const hpMult = 1 + (this.wave / 5) * 0.6;
+                        // Boss HP scales more reasonably
+                        const hpMult = 1 + (this.wave / 5) * 0.45;
 
                         const sprite = this.add.image(PATH[0].x, PATH[0].y, "boss").setDisplaySize(d.size, d.size);
                         sprite.setDepth(5);
@@ -655,7 +721,7 @@
                         this.enemies.push({
                             x: PATH[0].x, y: PATH[0].y,
                             hp: d.hp * hpMult, max: d.hp * hpMult,
-                            speed: d.speed, reward: d.reward + this.wave * 15,
+                            speed: d.speed, reward: d.reward + this.wave * 12,
                             idx: 0, sprite, slow: 1, dot: 0, burn: 0, isBoss: true
                         });
                         return;
@@ -664,15 +730,17 @@
                     const keys = Object.keys(ENEMIES).filter(k => k !== "boss");
                     let maxIndex = 0;
                     if (this.wave >= 3) maxIndex = 1;
-                    if (this.wave >= 5) maxIndex = 2;
-                    if (this.wave >= 8) maxIndex = 3;
-                    if (this.wave >= 12) maxIndex = 4;
+                    if (this.wave >= 6) maxIndex = 2;
+                    if (this.wave >= 9) maxIndex = 3;
+                    if (this.wave >= 13) maxIndex = 4;
                     if (this.wave >= 18) maxIndex = 5;
 
                     const key = keys[Phaser.Math.Between(0, maxIndex)];
                     const d = ENEMIES[key];
-                    const hpMult = 1 + (this.wave - 1) * 0.18;
-                    const speedMult = 1 + Math.min(this.wave * 0.015, 0.6);
+
+                    // Better HP scaling (less aggressive early, stronger later)
+                    const hpMult = 1 + Math.pow(this.wave * 0.12, 1.15);
+                    const speedMult = 1 + Math.min(this.wave * 0.012, 0.55);
 
                     const sprite = this.add.image(PATH[0].x, PATH[0].y, d.key).setDisplaySize(d.size, d.size);
                     sprite.setDepth(5);
@@ -690,7 +758,7 @@
                         x: PATH[0].x, y: PATH[0].y,
                         hp: d.hp * hpMult, max: d.hp * hpMult,
                         speed: d.speed * speedMult,
-                        reward: Math.floor(d.reward * (1 + this.wave * 0.05)),
+                        reward: Math.floor(d.reward * (1 + this.wave * 0.04)),
                         idx: 0, sprite, slow: 1, dot: 0, burn: 0
                     });
                 }
@@ -708,7 +776,7 @@
 
                     if (this.waveActive && this.spawnLeft > 0) {
                         this.spawnTimer += delta;
-                        const delay = this.wave % 5 === 0 ? 800 : Math.max(280, 520 - this.wave * 8);
+                        const delay = this.wave % 5 === 0 ? 800 : Math.max(300, 500 - this.wave * 6);
                         if (this.spawnTimer > delay) {
                             this.spawn();
                             this.spawnLeft--;
@@ -719,7 +787,6 @@
                     for (let i = this.enemies.length - 1; i >= 0; i--) {
                         const e = this.enemies[i];
 
-                        // Element damage over time
                         if (e.dot > 0) e.hp -= e.dot * (delta / 1000);
                         if (e.burn > 0) e.hp -= e.burn * (delta / 1000);
 
@@ -745,12 +812,16 @@
 
                         if (e.hp <= 0) {
                             this.gold += e.reward;
-                            this.mana += Math.floor(e.reward * 0.3);
+                            this.mana += Math.floor(e.reward * 0.28);
                             this.goldText.setText("💰 " + this.gold);
                             this.manaText.setText("🔵 " + this.mana);
                             this.hitParticles.setPosition(e.x, e.y);
                             this.hitParticles.explode(e.isBoss ? 30 : 16);
-                            if (e.isBoss) this.cameras.main.shake(300, 0.012);
+                            if (e.isBoss) {
+                                this.cameras.main.shake(300, 0.012);
+                                bossKilled++;
+                                this.checkAchievements();
+                            }
                             e.sprite.destroy();
                             this.enemies.splice(i, 1);
                             sfx.death();
@@ -770,8 +841,6 @@
                             this.fire(tw, target);
                             tw.last = time;
                             sfx.shoot();
-
-                            // Element sound
                             if (tw.data.element === "Ice") sfx.ice();
                             if (tw.data.element === "Fire") sfx.fire();
 
@@ -810,7 +879,6 @@
                             b.target.hp -= b.dmg;
                             this.showDamage(b.target.x, b.target.y, b.dmg, "#ff6666");
 
-                            // Apply element effects
                             if (b.slow) b.target.slow = Math.min(b.target.slow, b.slow);
                             if (b.dot) b.target.dot = Math.max(b.target.dot, b.dot);
                             if (b.burn) b.target.burn = Math.max(b.target.burn || 0, b.burn);
@@ -826,25 +894,17 @@
 
                     if (this.waveActive && this.spawnLeft <= 0 && this.enemies.length === 0) {
                         this.waveActive = false;
-                        this.gold += 40 + this.wave * 10;
-                        this.mana += 15 + this.wave * 2;
+                        this.gold += 35 + this.wave * 9;
+                        this.mana += 12 + this.wave * 1.8;
                         this.goldText.setText("💰 " + this.gold);
                         this.manaText.setText("🔵 " + this.mana);
                         this.cameras.main.shake(220, 0.008);
-
-                        if (this.wave > highWave) highWave = this.wave;
-                        saveProgress({
-                            username: playerName,
-                            highWave: highWave,
-                            gold: this.gold,
-                            mana: this.mana
-                        });
+                        this.saveAll();
                     }
                 }
 
                 fire(tw, target) {
                     const type = tw.data.shot;
-                    const elem = tw.data.element;
 
                     if (type === "laser") {
                         const line = this.add.line(0, 0, tw.x, tw.y, target.x, target.y, tw.data.color)
@@ -881,24 +941,17 @@
 
                 gameOver() {
                     this.add.rectangle(W/2, H/2, W, H, 0x000000, 0.85);
-                    this.add.text(W/2, H/2 - 40, "GAME OVER", {
+                    this.add.text(W/2, H/2 - 50, "GAME OVER", {
                         fontSize: "56px", color: "#ff2d55", fontStyle: "bold"
                     }).setOrigin(0.5);
-                    this.add.text(W/2, H/2 + 20, `Best Wave: ${highWave}`, {
+                    this.add.text(W/2, H/2 + 10, `Best Wave: ${Math.max(highWave, this.wave)}`, {
                         fontSize: "22px", color: "#ffd700"
                     }).setOrigin(0.5);
-                    this.add.text(W/2, H/2 + 60, "Refresh to play again", {
+                    this.add.text(W/2, H/2 + 50, "Refresh to play again", {
                         fontSize: "16px", color: "#aaa"
                     }).setOrigin(0.5);
                     this.input.off("pointerdown");
-
-                    if (this.wave > highWave) highWave = this.wave;
-                    saveProgress({
-                        username: playerName,
-                        highWave: highWave,
-                        gold: this.gold,
-                        mana: this.mana
-                    });
+                    this.saveAll();
                 }
             }
 
