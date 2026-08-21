@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="ory-verify" content="orynth-fb0ed1d780654415907007cc9fe7f36f">
     <title>Wobble Walls</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
     <style>
@@ -119,12 +120,10 @@
                 }
                 return min;
             }
-            // Sedikit lebih longgar supaya tower besar tidak terlalu dekat path
             FINAL_SPOTS = spots.filter(s => distToPath(s.x, s.y) > 48);
         }
         rebuildSpots();
 
-        // ===== BALANCED TOWERS =====
         const TOWERS = {
             archer:   { name:"ARCHER",   cost:45,  mana:0,  range:155, dmg:13, rate:420,  color:0x00f0ff, upCost:35,  maxLvl:3, shot:"bullet", key:"archer",  element:"Physical" },
             mage:     { name:"MAGE",     cost:85,  mana:8,  range:160, dmg:15, rate:680,  color:0xff2d95, upCost:60,  maxLvl:3, shot:"orb",    key:"mage",    element:"Arcane" },
@@ -138,7 +137,6 @@
             dragon:   { name:"DRAGON",   cost:240, mana:35, range:215, dmg:65, rate:1300, color:0xff2200, upCost:160, maxLvl:3, shot:"plasma", key:"dragon",  element:"Fire", burn:10 }
         };
 
-        // ===== ENEMY LEBIH BESAR =====
         const ENEMIES = {
             goblin: { hp:50,  speed:80,  reward:8,  size:38, key:"goblin" },
             runner: { hp:30,  speed:155, reward:6,  size:36, key:"runner" },
@@ -149,7 +147,6 @@
             boss:   { hp:1100, speed:27, reward:160, size:80, key:"boss", isBoss:true }
         };
 
-        // ===== AUDIO =====
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicPlaying = false;
         let musicMuted = false;
@@ -241,10 +238,7 @@
             try { return JSON.parse(localStorage.getItem("wobblewalls_save")) || null; } catch(e) { return null; }
         }
 
-        let achievements = {
-            wave15: false,
-            boss3: false
-        };
+        let achievements = { wave15: false, boss3: false };
         let bossKilled = 0;
 
         const overlay = document.getElementById("ui-overlay");
@@ -354,7 +348,6 @@
                     sep.lineStyle(3, 0xffffff, 0.85);
                     sep.lineBetween(15, 148, W-15, 148);
 
-                    // ===== JALUR LEBIH TEBAL =====
                     const pathG = this.add.graphics();
                     pathG.lineStyle(52, 0xffffff, 0.12);
                     pathG.beginPath();
@@ -374,7 +367,6 @@
                     for (let i = 1; i < PATH.length; i++) pathG.lineTo(PATH[i].x, PATH[i].y);
                     pathG.strokePath();
 
-                    // Spots
                     const spotG = this.add.graphics();
                     FINAL_SPOTS.forEach(s => {
                         spotG.lineStyle(6, 0x00e5ff, 0.22);
@@ -392,7 +384,6 @@
                     this.waveText  = this.add.text(320, 10, "WAVE 0", { fontSize: "18px", color: "#00e5ff", fontStyle: "bold" });
                     this.nameText  = this.add.text(480, 10, playerName, { fontSize: "16px", color: "#ffffff" });
 
-                    // Tower buttons
                     const keys = Object.keys(TOWERS);
                     keys.forEach((key, i) => {
                         const t = TOWERS[key];
@@ -421,7 +412,6 @@
                         if (key === "archer") box.setStrokeStyle(3, 0x00e5ff, 1);
                     });
 
-                    // Controls
                     this.speedBtn = this.add.text(620, 200, "1X", {
                         fontSize: "17px", color: "#ffffff", backgroundColor: "#222244",
                         padding: { x: 12, y: 7 }
@@ -454,7 +444,6 @@
                         this.startWave();
                     });
 
-                    // Upgrade panel
                     this.upPanel = this.add.container(W/2, H - 110).setVisible(false);
                     const upBg = this.add.rectangle(0, 0, 380, 100, 0x0c0c20, 0.95);
                     upBg.setStrokeStyle(3, 0xffffff, 0.8);
@@ -508,27 +497,13 @@
                 showAchievement(title) {
                     if (this.achieveText) this.achieveText.destroy();
                     this.achieveText = this.add.text(W/2, 180, "🏆 " + title, {
-                        fontSize: "22px",
-                        color: "#ffd700",
-                        fontStyle: "bold",
-                        backgroundColor: "#1a1a00",
-                        padding: { x: 16, y: 10 }
+                        fontSize: "22px", color: "#ffd700", fontStyle: "bold",
+                        backgroundColor: "#1a1a00", padding: { x: 16, y: 10 }
                     }).setOrigin(0.5).setDepth(100);
-
                     sfx.achieve();
-
                     this.tweens.add({
-                        targets: this.achieveText,
-                        alpha: 0,
-                        y: 150,
-                        duration: 2500,
-                        ease: "Power2",
-                        onComplete: () => {
-                            if (this.achieveText) {
-                                this.achieveText.destroy();
-                                this.achieveText = null;
-                            }
-                        }
+                        targets: this.achieveText, alpha: 0, y: 150, duration: 2500, ease: "Power2",
+                        onComplete: () => { if (this.achieveText) { this.achieveText.destroy(); this.achieveText = null; } }
                     });
                 }
 
@@ -649,7 +624,6 @@
                     this.manaText.setText("🔵 " + this.mana);
                     sfx.place();
 
-                    // ===== TOWER LEBIH BESAR =====
                     const sprite = this.add.image(snapX, snapY, t.key).setDisplaySize(58, 58);
                     sprite.setDepth(10);
 
@@ -707,12 +681,7 @@
                         sprite.setDepth(5);
 
                         this.tweens.add({
-                            targets: sprite,
-                            y: sprite.y - 8,
-                            duration: 700,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: "Sine.easeInOut"
+                            targets: sprite, y: sprite.y - 8, duration: 700, yoyo: true, repeat: -1, ease: "Sine.easeInOut"
                         });
 
                         this.enemies.push({
@@ -734,7 +703,6 @@
 
                     const key = keys[Phaser.Math.Between(0, maxIndex)];
                     const d = ENEMIES[key];
-
                     const hpMult = 1 + Math.pow(this.wave * 0.12, 1.15);
                     const speedMult = 1 + Math.min(this.wave * 0.012, 0.55);
 
@@ -742,12 +710,7 @@
                     sprite.setDepth(5);
 
                     this.tweens.add({
-                        targets: sprite,
-                        y: sprite.y - 4,
-                        duration: 500 + Math.random() * 200,
-                        yoyo: true,
-                        repeat: -1,
-                        ease: "Sine.easeInOut"
+                        targets: sprite, y: sprite.y - 4, duration: 500 + Math.random() * 200, yoyo: true, repeat: -1, ease: "Sine.easeInOut"
                     });
 
                     this.enemies.push({
@@ -841,11 +804,7 @@
                             if (tw.data.element === "Fire") sfx.fire();
 
                             this.tweens.add({
-                                targets: tw.sprite,
-                                scaleX: 1.28,
-                                scaleY: 1.28,
-                                duration: 80,
-                                yoyo: true
+                                targets: tw.sprite, scaleX: 1.28, scaleY: 1.28, duration: 80, yoyo: true
                             });
                         }
                     }
